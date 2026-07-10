@@ -17,9 +17,15 @@ app.use(express.static(path.join(__dirname, '../public')));
 // In a real RAG system this would be an embedding similarity search
 function retrieveRelevantDocs(query, topK = 3) {
   const queryWords = query.toLowerCase().split(/\s+/);
-  
+
   const scored = policies.map(doc => {
-    const text = (doc.title + ' ' + doc.content).toLowerCase();
+    const text = (
+      doc.title + ' ' +
+      doc.content + ' ' +
+      (doc.emirate || '') + ' ' +
+      (doc.category || '')
+    ).toLowerCase();
+
     const score = queryWords.reduce((sum, word) => {
       return sum + (text.includes(word) ? 1 : 0);
     }, 0);
@@ -31,6 +37,7 @@ function retrieveRelevantDocs(query, topK = 3) {
     .sort((a, b) => b.score - a.score)
     .slice(0, topK);
 }
+
 
 // Guardrails — detect out-of-scope or malicious input
 function checkGuardrails(message) {
@@ -52,7 +59,8 @@ function checkGuardrails(message) {
 
   const offTopic = [
     'weather', 'recipe', 'sports', 'movie', 'music',
-    'joke', 'game', 'dating', 'stock', 'crypto', 'bitcoin'
+    'joke', 'game', 'dating', 'stock', 'crypto', 'bitcoin',
+    'football', 'cricket', 'basketball', 'tennis', 'match'
   ];
 
   for (const phrase of banned) {
