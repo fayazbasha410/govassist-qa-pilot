@@ -45,7 +45,7 @@ function checkGuardrails(message) {
 
   const banned = [
     'ignore previous instructions',
-    'ignore all instructions', 
+    'ignore all instructions',
     'you are now',
     'pretend you are',
     'forget your instructions',
@@ -65,8 +65,8 @@ function checkGuardrails(message) {
 
   for (const phrase of banned) {
     if (lower.includes(phrase)) {
-      return { 
-        blocked: true, 
+      return {
+        blocked: true,
         reason: 'prompt_injection',
         message: 'I can only assist with Abu Dhabi government services. I cannot follow instructions that attempt to change my behaviour.'
       };
@@ -75,8 +75,8 @@ function checkGuardrails(message) {
 
   for (const topic of offTopic) {
     if (lower.includes(topic)) {
-      return { 
-        blocked: true, 
+      return {
+        blocked: true,
         reason: 'off_topic',
         message: `I'm GovAssist, specialising in Abu Dhabi government services only. I can help with licenses, fines, appointments, visas, and similar topics.`
       };
@@ -124,7 +124,7 @@ function detectToolIntent(message) {
     const services = ['driving-license', 'vehicle-registration', 'emirates-id', 'residency-visa', 'health-card'];
     const dateMatch = message.match(/\d{4}-\d{2}-\d{2}/);
     const serviceMatch = services.find(s => lower.includes(s.replace('-', ' ')) || lower.includes(s));
-    
+
     if (serviceMatch && dateMatch) {
       return { tool: 'bookAppointment', params: { service: serviceMatch, date: dateMatch[0] } };
     }
@@ -139,7 +139,7 @@ function detectToolIntent(message) {
 
 // Health check — used by tests to confirm server is up
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', version: '1.0.0', model: 'llama3.2' });
+  res.json({ status: 'ok', version: '1.0.0', model: 'llama3.2', name: 'GovMurshid' });
 });
 
 // Policy search — returns raw retrieved docs (used by RAG eval tests)
@@ -217,11 +217,13 @@ app.post('/api/chat', async (req, res) => {
   // 4. Build grounded prompt and call LLM
   const context = docs.map(d => `[${d.id}] ${d.title}:\n${d.content}`).join('\n\n');
 
-  const systemPrompt = `You are GovAssist, an AI assistant for Abu Dhabi government services via the TAMM platform.
-Answer ONLY using the policy information provided below. 
+  const systemPrompt = `You are GovMurshid, an AI guide for UAE government services across all seven emirates — Abu Dhabi, Dubai, Sharjah, Ajman, Umm Al Quwain, Ras Al Khaimah, and Fujairah.
+Answer ONLY using the policy information provided below.
 Do NOT add information that is not in the context.
+Always mention which emirate a rule applies to if it differs across emirates.
 Be concise, helpful, and professional.
-If the answer is not in the context, say so clearly.
+If the answer is not in the context, say so clearly and suggest the user visit the relevant emirate portal.
+ 
 
 POLICY CONTEXT:
 ${context}`;
