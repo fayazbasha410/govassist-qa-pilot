@@ -2,7 +2,7 @@ const { test, expect } = require('../../fixtures/fixtures');
 const { ChatPage } = require('../../pages/ChatPage');
 const { CHAT_MESSAGES, GUARDRAIL_INPUTS } = require('../../data/testData');
 
-test.describe('GovAssist Chat UI', () => {
+test.describe('GovMurshid Chat UI', () => {
 
   let chatPage;
 
@@ -17,7 +17,7 @@ test.describe('GovAssist Chat UI', () => {
     test('header is visible with correct branding', async () => {
       expect(await chatPage.header.isVisible()).toBe(true);
       const title = await chatPage.header.getTitle();
-      expect(title).toContain('GovAssist');
+      expect(title).toContain('GovMurshid');
       const subtitle = await chatPage.header.getSubtitle();
       expect(subtitle).toContain('UAE');
     });
@@ -25,7 +25,7 @@ test.describe('GovAssist Chat UI', () => {
     test('welcome message is shown on load', async ({ page }) => {
       const welcome = await chatPage.messages.getAssistantMessages().first();
       await expect(welcome).toBeVisible();
-      await expect(welcome).toContainText('GovAssist');
+      await expect(welcome).toContainText('GovMurshid');
     });
 
     test('input bar is visible and enabled', async () => {
