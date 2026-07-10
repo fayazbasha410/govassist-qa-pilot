@@ -16,7 +16,49 @@ app.use(express.static(path.join(__dirname, '../public')));
 // Simple keyword-based retrieval (no vector DB needed for the pilot)
 // In a real RAG system this would be an embedding similarity search
 function retrieveRelevantDocs(query, topK = 3) {
-  const queryWords = query.toLowerCase().split(/\s+/);
+  const queryWords = query.toLowerCase().split(/\s+/)
+    .filter(w => w.length > 2); // ignore short words like "do", "is"
+
+  // Synonym map — common query words → policy keywords
+  const synonyms = {
+    'expires': ['expiry', 'expired', 'renewal', 'renew'],
+    'expired': ['expiry', 'expired', 'renewal'],
+    'register': ['registration', 'registered'],
+    'registration': ['register', 'registered'],
+    'renew': ['renewal', 'renewing', 'renewed'],
+    'renewal': ['renew', 'renewed'],
+    'pay': ['payment', 'paying', 'paid'],
+    'payment': ['pay', 'paid'],
+    'apply': ['application', 'applying'],
+    'application': ['apply', 'applying'],
+    'mandatory': ['required', 'compulsory', 'must'],
+    'required': ['mandatory', 'compulsory', 'requirement'],
+    'documents': ['document', 'documentation', 'requirements'],
+    'license': ['licence', 'licensed'],
+    'fine': ['fines', 'penalty', 'penalties'],
+    'fines': ['fine', 'penalty', 'penalties'],
+    'school': ['education', 'enrollment', 'enroll'],
+    'enroll': ['enrollment', 'school', 'education'],
+    'insurance': ['insured', 'coverage', 'health'],
+    'tenancy': ['tenant', 'rent', 'rental', 'contract'],
+    'contract': ['tenancy', 'rental', 'agreement'],
+    'visa': ['residency', 'residence', 'permit'],
+    'benefits': ['gratuity', 'entitlement', 'service'],
+    'gratuity': ['benefits', 'entitlement', 'end of service'],
+    'trade': ['business', 'commercial', 'license'],
+    'vat': ['tax', 'value added', 'federal tax', 'taxable', 'supplies'],
+    'threshold': ['exceeding', 'mandatory', 'registration', 'taxable'],
+    'registration': ['register', 'registered', 'mandatory', 'threshold'],
+
+    'golden': ['visa', 'long-term', 'residence'],
+  };
+
+  // Expand query words with synonyms
+  const expandedWords = new Set(queryWords);
+  for (const word of queryWords) {
+    const syns = synonyms[word] || [];
+    syns.forEach(s => expandedWords.add(s));
+  }
 
   const scored = policies.map(doc => {
     const text = (
@@ -26,9 +68,14 @@ function retrieveRelevantDocs(query, topK = 3) {
       (doc.category || '')
     ).toLowerCase();
 
-    const score = queryWords.reduce((sum, word) => {
-      return sum + (text.includes(word) ? 1 : 0);
-    }, 0);
+    let score = 0;
+    for (const word of expandedWords) {
+      if (text.includes(word)) score += 1;
+    }
+    // Bonus: title match is worth more
+    for (const word of queryWords) {
+      if (doc.title.toLowerCase().includes(word)) score += 2;
+    }
     return { ...doc, score };
   });
 
