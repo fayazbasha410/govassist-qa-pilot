@@ -4,18 +4,20 @@
   "description": "A mini government-services AI assistant (RAG + agentic chatbot) with a full QA suite. Built as a portfolio project",
   "main": "index.js",
   "scripts": {
-  "start": "node src/server.js",
-  "test": "npx playwright test",
-  "eval": "cd eval/configs && promptfoo eval --config promptfoo.yaml",
-  "eval:regression": "node eval/regression-gate.js",
-  "eval:view": "cd eval/configs && promptfoo view",
-  "eval:redteam": "node eval/adversarial/red-team.js"
-},
+    "start": "node src/server.js",
+    "test": "npx playwright test",
+    "perf": "k6 run tests/performance/load-test.js",
+    "eval": "cd eval/configs && promptfoo eval --config promptfoo.yaml",
+    "eval:regression": "node eval/regression-gate.js",
+    "eval:view": "cd eval/configs && promptfoo view",
+    "eval:redteam": "node eval/adversarial/red-team.js"
+  },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
+    "@axe-core/playwright": "^4.12.1",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1"
