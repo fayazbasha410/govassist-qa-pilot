@@ -6,11 +6,13 @@
   "scripts": {
     "start": "node src/server.js",
     "test": "npx playwright test",
-    "perf": "k6 run tests/performance/load-test.js",
     "eval": "cd eval/configs && promptfoo eval --config promptfoo.yaml",
     "eval:regression": "node eval/regression-gate.js",
+    "eval:redteam": "node eval/adversarial/red-team.js",
+    "eval:prod": "node eval/prod-simulator/prod-eval.js",
+    "eval:dashboard": "node eval/observability/dashboard.js && open eval/observability/dashboard.html",
     "eval:view": "cd eval/configs && promptfoo view",
-    "eval:redteam": "node eval/adversarial/red-team.js"
+    "perf": "k6 run tests/performance/load-test.js"
   },
   "keywords": [],
   "author": "",
