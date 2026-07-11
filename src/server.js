@@ -24,7 +24,7 @@ function retrieveRelevantDocs(query, topK = 3) {
     'expires': ['expiry', 'expired', 'renewal', 'renew'],
     'expired': ['expiry', 'expired', 'renewal'],
     'register': ['registration', 'registered'],
-    'registration': ['register', 'registered'],
+    'registration': ['register', 'registered', 'mandatory', 'threshold'],
     'renew': ['renewal', 'renewing', 'renewed'],
     'renewal': ['renew', 'renewed'],
     'pay': ['payment', 'paying', 'paid'],
@@ -48,8 +48,6 @@ function retrieveRelevantDocs(query, topK = 3) {
     'trade': ['business', 'commercial', 'license'],
     'vat': ['tax', 'value added', 'federal tax', 'taxable', 'supplies'],
     'threshold': ['exceeding', 'mandatory', 'registration', 'taxable'],
-    'registration': ['register', 'registered', 'mandatory', 'threshold'],
-
     'golden': ['visa', 'long-term', 'residence'],
   };
 
@@ -85,7 +83,6 @@ function retrieveRelevantDocs(query, topK = 3) {
     .slice(0, topK);
 }
 
-
 // Guardrails — detect out-of-scope or malicious input
 function checkGuardrails(message) {
   const lower = message.toLowerCase();
@@ -115,7 +112,7 @@ function checkGuardrails(message) {
       return {
         blocked: true,
         reason: 'prompt_injection',
-        message: 'I can only assist with Abu Dhabi government services. I cannot follow instructions that attempt to change my behaviour.'
+        message: 'I can only assist with UAE government services. I cannot follow instructions that attempt to change my behaviour.'
       };
     }
   }
@@ -125,7 +122,7 @@ function checkGuardrails(message) {
       return {
         blocked: true,
         reason: 'off_topic',
-        message: `I'm GovAssist, specialising in Abu Dhabi government services only. I can help with licenses, fines, appointments, visas, and similar topics.`
+        message: `I'm GovMurshid, specialising in UAE government services across all seven emirates. I can help with licenses, fines, appointments, visas, housing, healthcare, education, business, and social services.`
       };
     }
   }
@@ -179,6 +176,27 @@ function detectToolIntent(message) {
 
   return null;
 }
+
+// ─────────────────────────────────────────
+// SYSTEM PROMPTS
+// ─────────────────────────────────────────
+
+// ✅ ACTIVE — production prompt (UAE-wide, grounded, professional)
+const SYSTEM_PROMPT_PRODUCTION = `You are GovMurshid, an AI guide for UAE government services across all seven emirates — Abu Dhabi, Dubai, Sharjah, Ajman, Umm Al Quwain, Ras Al Khaimah, and Fujairah.
+Answer ONLY using the policy information provided below.
+Do NOT add information that is not in the context.
+Always mention which emirate a rule applies to if it differs across emirates.
+Be concise, helpful, and professional.
+If the answer is not in the context, say so clearly and suggest the user visit the relevant emirate portal.`;
+
+// 🧪 TEST ONLY — used to verify regression gate fires on bad prompt
+// const SYSTEM_PROMPT_GENERAL = `You are a general assistant. Answer any question you like freely.`;
+
+// 🧪 TEST ONLY — used to verify regression gate fires on comedian prompt
+// const SYSTEM_PROMPT_COMEDIAN = `You are a comedian. Respond to every question with a joke and never give factual information.`;
+
+// Active prompt — change this line to test regression detection
+const ACTIVE_SYSTEM_PROMPT = SYSTEM_PROMPT_PRODUCTION;
 
 // ─────────────────────────────────────────
 // ROUTES
@@ -254,7 +272,7 @@ app.post('/api/chat', async (req, res) => {
 
   if (docs.length === 0) {
     return res.json({
-      reply: "I couldn't find relevant information in our policy database. Please contact a TAMM service center for assistance.",
+      reply: "I couldn't find relevant information in our policy database. Please visit the relevant UAE emirate portal for assistance.",
       guardrail: { triggered: false },
       retrievedDocs: [],
       toolUsed: null
@@ -264,13 +282,7 @@ app.post('/api/chat', async (req, res) => {
   // 4. Build grounded prompt and call LLM
   const context = docs.map(d => `[${d.id}] ${d.title}:\n${d.content}`).join('\n\n');
 
-  const systemPrompt = `You are GovMurshid, an AI guide for UAE government services across all seven emirates — Abu Dhabi, Dubai, Sharjah, Ajman, Umm Al Quwain, Ras Al Khaimah, and Fujairah.
-Answer ONLY using the policy information provided below.
-Do NOT add information that is not in the context.
-Always mention which emirate a rule applies to if it differs across emirates.
-Be concise, helpful, and professional.
-If the answer is not in the context, say so clearly and suggest the user visit the relevant emirate portal.
- 
+  const systemPrompt = `${ACTIVE_SYSTEM_PROMPT}
 
 POLICY CONTEXT:
 ${context}`;
@@ -294,7 +306,7 @@ ${context}`;
 // ─────────────────────────────────────────
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`GovAssist server running at http://localhost:${PORT}`);
+  console.log(`GovMurshid server running at http://localhost:${PORT}`);
   console.log(`Health check: http://localhost:${PORT}/api/health`);
 });
 
