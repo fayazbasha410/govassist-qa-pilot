@@ -8,7 +8,8 @@
   "test": "npx playwright test",
   "eval": "cd eval/configs && promptfoo eval --config promptfoo.yaml",
   "eval:regression": "node eval/regression-gate.js",
-  "eval:view": "cd eval/configs && promptfoo view"
+  "eval:view": "cd eval/configs && promptfoo view",
+  "eval:redteam": "node eval/adversarial/red-team.js"
 },
   "keywords": [],
   "author": "",
