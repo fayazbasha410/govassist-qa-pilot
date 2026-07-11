@@ -3,13 +3,13 @@ name: Nightly Quality Gate
 on:
   schedule:
     - cron: '0 1 * * *'  # 1 AM UTC every night (5 AM UAE time)
-  workflow_dispatch:       # also allow manual trigger
+  workflow_dispatch:       # allow manual trigger from GitHub UI
 
 jobs:
   nightly-full-eval:
     name: Full RAG Evaluation
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 35
 
     steps:
       - uses: actions/checkout@v4
@@ -23,17 +23,28 @@ jobs:
 
       - run: npm install -g promptfoo
 
-      - name: Install Ollama
+      - name: Install Ollama and pull model
         run: |
           curl -fsSL https://ollama.com/install.sh | sh
           ollama serve &
-          sleep 5
+          echo "Waiting for Ollama..."
+          for i in {1..20}; do
+            curl -sf http://localhost:11434/api/tags && echo "Ollama ready!" && break
+            echo "Attempt $i, retrying in 3s..."
+            sleep 3
+          done
           ollama pull llama3.2
+          echo "Model ready!"
 
       - name: Start server
         run: |
           npm start &
-          sleep 3
+          echo "Waiting for server..."
+          for i in {1..30}; do
+            curl -sf http://localhost:3000/api/health && echo "Server ready!" && break
+            echo "Attempt $i, retrying in 3s..."
+            sleep 3
+          done
 
       - name: Run full eval
         run: npm run eval
@@ -64,17 +75,28 @@ jobs:
 
       - run: npm ci
 
-      - name: Install Ollama
+      - name: Install Ollama and pull model
         run: |
           curl -fsSL https://ollama.com/install.sh | sh
           ollama serve &
-          sleep 5
+          echo "Waiting for Ollama..."
+          for i in {1..20}; do
+            curl -sf http://localhost:11434/api/tags && echo "Ollama ready!" && break
+            echo "Attempt $i, retrying in 3s..."
+            sleep 3
+          done
           ollama pull llama3.2
+          echo "Model ready!"
 
       - name: Start server
         run: |
           npm start &
-          sleep 3
+          echo "Waiting for server..."
+          for i in {1..30}; do
+            curl -sf http://localhost:3000/api/health && echo "Server ready!" && break
+            echo "Attempt $i, retrying in 3s..."
+            sleep 3
+          done
 
       - name: Run red team
         run: npm run eval:redteam
@@ -82,7 +104,7 @@ jobs:
   nightly-accessibility:
     name: Nightly Accessibility Scan
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
 
     steps:
       - uses: actions/checkout@v4
@@ -96,17 +118,28 @@ jobs:
 
       - run: npx playwright install --with-deps chromium
 
-      - name: Install Ollama
+      - name: Install Ollama and pull model
         run: |
           curl -fsSL https://ollama.com/install.sh | sh
           ollama serve &
-          sleep 5
+          echo "Waiting for Ollama..."
+          for i in {1..20}; do
+            curl -sf http://localhost:11434/api/tags && echo "Ollama ready!" && break
+            echo "Attempt $i, retrying in 3s..."
+            sleep 3
+          done
           ollama pull llama3.2
+          echo "Model ready!"
 
       - name: Start server
         run: |
           npm start &
-          sleep 3
+          echo "Waiting for server..."
+          for i in {1..30}; do
+            curl -sf http://localhost:3000/api/health && echo "Server ready!" && break
+            echo "Attempt $i, retrying in 3s..."
+            sleep 3
+          done
 
       - name: Run accessibility tests
         run: npx playwright test tests/specs/ui/accessibility.spec.js

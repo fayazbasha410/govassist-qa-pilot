@@ -8,7 +8,7 @@ jobs:
   full-playwright:
     name: Full Playwright Suite
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
 
     steps:
       - uses: actions/checkout@v4
@@ -26,13 +26,24 @@ jobs:
         run: |
           curl -fsSL https://ollama.com/install.sh | sh
           ollama serve &
-          sleep 5
+          echo "Waiting for Ollama..."
+          for i in {1..20}; do
+            curl -sf http://localhost:11434/api/tags && echo "Ollama ready!" && break
+            echo "Attempt $i, retrying in 3s..."
+            sleep 3
+          done
           ollama pull llama3.2
+          echo "Model ready!"
 
       - name: Start server
         run: |
           npm start &
-          sleep 3
+          echo "Waiting for server..."
+          for i in {1..30}; do
+            curl -sf http://localhost:3000/api/health && echo "Server ready!" && break
+            echo "Attempt $i, retrying in 3s..."
+            sleep 3
+          done
 
       - name: Run full Playwright suite
         run: npx playwright test
@@ -48,7 +59,7 @@ jobs:
   regression-gate:
     name: RAG Regression Gate
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
     needs: full-playwright
 
     steps:
@@ -63,17 +74,28 @@ jobs:
 
       - run: npm install -g promptfoo
 
-      - name: Install Ollama
+      - name: Install Ollama and pull model
         run: |
           curl -fsSL https://ollama.com/install.sh | sh
           ollama serve &
-          sleep 5
+          echo "Waiting for Ollama..."
+          for i in {1..20}; do
+            curl -sf http://localhost:11434/api/tags && echo "Ollama ready!" && break
+            echo "Attempt $i, retrying in 3s..."
+            sleep 3
+          done
           ollama pull llama3.2
+          echo "Model ready!"
 
       - name: Start server
         run: |
           npm start &
-          sleep 3
+          echo "Waiting for server..."
+          for i in {1..30}; do
+            curl -sf http://localhost:3000/api/health && echo "Server ready!" && break
+            echo "Attempt $i, retrying in 3s..."
+            sleep 3
+          done
 
       - name: Run regression gate
         run: npm run eval:regression
@@ -81,7 +103,7 @@ jobs:
   red-team:
     name: Adversarial Red Team
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     needs: full-playwright
 
     steps:
@@ -94,17 +116,28 @@ jobs:
 
       - run: npm ci
 
-      - name: Install Ollama
+      - name: Install Ollama and pull model
         run: |
           curl -fsSL https://ollama.com/install.sh | sh
           ollama serve &
-          sleep 5
+          echo "Waiting for Ollama..."
+          for i in {1..20}; do
+            curl -sf http://localhost:11434/api/tags && echo "Ollama ready!" && break
+            echo "Attempt $i, retrying in 3s..."
+            sleep 3
+          done
           ollama pull llama3.2
+          echo "Model ready!"
 
       - name: Start server
         run: |
           npm start &
-          sleep 3
+          echo "Waiting for server..."
+          for i in {1..30}; do
+            curl -sf http://localhost:3000/api/health && echo "Server ready!" && break
+            echo "Attempt $i, retrying in 3s..."
+            sleep 3
+          done
 
       - name: Run red team
         run: npm run eval:redteam
