@@ -4,9 +4,12 @@
   "description": "A mini government-services AI assistant (RAG + agentic chatbot) with a full QA suite. Built as a portfolio project",
   "main": "index.js",
   "scripts": {
-    "start": "node src/server.js",
-    "test": "echo \"No tests yet\""
-  },
+  "start": "node src/server.js",
+  "test": "npx playwright test",
+  "eval": "cd eval/configs && promptfoo eval --config promptfoo.yaml",
+  "eval:regression": "node eval/regression-gate.js",
+  "eval:view": "cd eval/configs && promptfoo view"
+},
   "keywords": [],
   "author": "",
   "license": "ISC",

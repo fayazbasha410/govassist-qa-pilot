@@ -1,0 +1,23 @@
+{
+  "version": "v1",
+  "date": "2026-07-10",
+  "description": "Initial baseline — GovMurshid UAE-wide, 35 policies, llama3.2",
+  "config": "eval/configs/promptfoo.yaml",
+  "results": {
+    "total": 15,
+    "passed": 15,
+    "failed": 0,
+    "passRate": 1.0
+  },
+  "categoryScores": {
+    "driving": { "total": 3, "passed": 3, "passRate": 1.0 },
+    "identity": { "total": 3, "passed": 3, "passRate": 1.0 },
+    "housing": { "total": 2, "passed": 2, "passRate": 1.0 },
+    "healthcare": { "total": 2, "passed": 2, "passRate": 1.0 },
+    "education": { "total": 2, "passed": 2, "passRate": 1.0 },
+    "business": { "total": 2, "passed": 2, "passRate": 1.0 },
+    "social": { "total": 1, "passed": 1, "passRate": 1.0 }
+  },
+  "noiseBand": 0.20,
+  "minimumPassRate": 0.80
+}
