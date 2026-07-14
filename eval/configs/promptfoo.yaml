@@ -1,8 +1,5 @@
-# GovMurshid — RAG Evaluation Suite
-# Tests faithfulness, answer relevance, and guardrails
-# against a versioned golden dataset
-
-description: GovMurshid UAE Government Services RAG Eval
+concurrency: 1
+description: GovMurshid UAE Government Services RAG Eval — English + Arabic
 
 providers:
   - id: http
@@ -20,7 +17,8 @@ prompts:
   - "{{input}}"
 
 tests:
-  # ── DRIVING ────────────────────────────────────────────────
+
+  # ── DRIVING ────────────────────────────────────────────
   - description: "GD-001 Driving license renewal requirements"
     vars:
       input: "How do I renew my driving license in the UAE?"
@@ -48,7 +46,7 @@ tests:
       - type: not-contains
         value: "I don't know"
 
-  # ── IDENTITY ───────────────────────────────────────────────
+  # ── IDENTITY ───────────────────────────────────────────
   - description: "GD-004 Emirates ID expiry penalties"
     vars:
       input: "What is the fine for having an expired Emirates ID?"
@@ -76,7 +74,7 @@ tests:
       - type: not-contains
         value: "I don't know"
 
-  # ── HOUSING ────────────────────────────────────────────────
+  # ── HOUSING ────────────────────────────────────────────
   - description: "GD-007 Ejari registration Dubai"
     vars:
       input: "How do I register my rental contract in Dubai?"
@@ -95,7 +93,7 @@ tests:
       - type: not-contains
         value: "I don't know"
 
-  # ── HEALTHCARE ─────────────────────────────────────────────
+  # ── HEALTHCARE ─────────────────────────────────────────
   - description: "GD-009 Health insurance mandatory Dubai"
     vars:
       input: "Is health insurance mandatory for residents in Dubai?"
@@ -114,7 +112,7 @@ tests:
       - type: not-contains
         value: "I don't know"
 
-  # ── EDUCATION ──────────────────────────────────────────────
+  # ── EDUCATION ──────────────────────────────────────────
   - description: "GD-011 School enrollment Dubai KHDA"
     vars:
       input: "What is the process for enrolling a child in a Dubai school?"
@@ -133,7 +131,7 @@ tests:
       - type: not-contains
         value: "KHDA"
 
-  # ── BUSINESS ───────────────────────────────────────────────
+  # ── BUSINESS ───────────────────────────────────────────
   - description: "GD-013 Trade license renewal Dubai"
     vars:
       input: "What is the process and penalty for late trade license renewal in Dubai?"
@@ -152,7 +150,7 @@ tests:
       - type: not-contains
         value: "no VAT"
 
-  # ── SOCIAL ─────────────────────────────────────────────────
+  # ── SOCIAL ─────────────────────────────────────────────
   - description: "GD-015 Expatriate end of service gratuity"
     vars:
       input: "How is end of service gratuity calculated for expatriate employees in UAE?"
@@ -162,7 +160,56 @@ tests:
       - type: not-contains
         value: "no benefits"
 
+  # ── ARABIC CASES ───────────────────────────────────────
+  - description: "GD-016 Arabic — driving license renewal"
+    vars:
+      input: "كيف أجدد رخصة القيادة في الإمارات؟"
+    assert:
+      - type: llm-rubric
+        value: "The response is in Arabic and provides information about driving license renewal mentioning required documents or steps"
+      - type: not-contains
+        value: "I don't know"
+
+  - description: "GD-017 Arabic — Emirates ID fine"
+    vars:
+      input: "ما هي غرامة انتهاء صلاحية الهوية الإماراتية؟"
+    assert:
+      - type: llm-rubric
+        value: "The response is in Arabic and mentions a fine or penalty for expired Emirates ID"
+      - type: not-contains
+        value: "I don't know"
+
+  - description: "GD-018 Arabic — health insurance Dubai"
+    vars:
+      input: "هل التأمين الصحي إلزامي في دبي؟"
+    assert:
+      - type: llm-rubric
+        value: "The response is in Arabic and confirms that health insurance is mandatory in Dubai"
+      - type: not-contains
+        value: "I don't know"
+
+  - description: "GD-019 Arabic — Ejari registration"
+    vars:
+      input: "كيف أسجل عقد الإيجار في دبي؟"
+    assert:
+      - type: llm-rubric
+        value: "The response is in Arabic and mentions Ejari or the tenancy registration process in Dubai"
+      - type: not-contains
+        value: "I don't know"
+
+  - description: "GD-020 Arabic — Golden Visa"
+    vars:
+      input: "من يحق له التقدم للحصول على الإقامة الذهبية في الإمارات؟"
+    assert:
+      - type: llm-rubric
+        value: "The response is in Arabic and mentions eligible categories for the Golden Visa such as investors or entrepreneurs"
+      - type: not-contains
+        value: "I don't know"
+
+# Scoring — use Groq as judge (replaces Ollama)
 defaultTest:
   options:
     provider:
-      id: ollama:chat:llama3.2
+      id: groq:llama-3.1-8b-instant
+      config:
+        apiKey: "{{env.GROQ_API_KEY}}"

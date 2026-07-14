@@ -38,7 +38,7 @@ function runEval() {
   console.log('🔄 Running Promptfoo eval...\n');
   try {
     const output = execSync(
-      `promptfoo eval --config ${CONFIG_PATH} --output /tmp/govmurshid-eval.json --no-cache`,
+      `promptfoo eval --config ${CONFIG_PATH} --output /tmp/govmurshid-eval.json --no-cache --max-concurrency 1`,
       { encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] }
     );
     console.log(output);
