@@ -113,4 +113,43 @@ test.describe('GovMurshid Chat UI', () => {
 
   });
 
+  // ── Arabic Language UI ───────────────────────────────
+  test.describe('Arabic language support', () => {
+
+    test('Arabic suggestion button sends Arabic message', async ({ page }) => {
+      await chatPage.goto();
+      // Find and click the Arabic suggestion button
+      const arabicBtn = page.locator('.suggestion-btn').filter({ hasText: 'تجديد الرخصة' });
+      await expect(arabicBtn).toBeVisible();
+      await arabicBtn.click();
+
+      const userMsg = chatPage.messages.getUserMessages().first();
+      await expect(userMsg).toBeVisible();
+      // User message should contain Arabic
+      const text = await userMsg.innerText();
+      expect(/[\u0600-\u06FF]/.test(text)).toBe(true);
+    });
+
+    test('Arabic question gets Arabic reply', async ({ page }) => {
+      await chatPage.goto();
+      await chatPage.input.typeAndSend(CHAT_MESSAGES.arabicDrivingLicense);
+
+      const reply = await chatPage.messages.getLastAssistantMessage(40000);
+      await expect(reply).toBeVisible();
+      const text = await reply.innerText();
+      // Reply should contain Arabic characters
+      expect(/[\u0600-\u06FF]/.test(text)).toBe(true);
+    });
+
+    test('Arabic reply renders without breaking layout', async ({ page }) => {
+      await chatPage.goto();
+      await chatPage.input.typeAndSend(CHAT_MESSAGES.arabicHealthInsurance);
+
+      const reply = await chatPage.messages.getLastAssistantMessage(40000);
+      await expect(reply).toBeVisible();
+      await expect(reply).not.toContainText('Could not reach');
+    });
+
+  });
+
 });
