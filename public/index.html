@@ -1,11 +1,16 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>GovMurshid — UAE Government Services</title>
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
 
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
@@ -26,8 +31,15 @@
       gap: 12px;
     }
 
-    header h1 { font-size: 1.25rem; font-weight: 600; }
-    header p  { font-size: 0.8rem; opacity: 0.85; }
+    header h1 {
+      font-size: 1.25rem;
+      font-weight: 600;
+    }
+
+    header p {
+      font-size: 0.8rem;
+      opacity: 0.85;
+    }
 
     #chat-container {
       width: 100%;
@@ -53,6 +65,8 @@
       border-radius: 12px;
       line-height: 1.5;
       font-size: 0.95rem;
+      unicode-bidi: plaintext;
+      text-align: start;
     }
 
     .message.user {
@@ -67,7 +81,7 @@
       background: white;
       color: #1a1a1a;
       border-bottom-left-radius: 4px;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     }
 
     .message.assistant .meta {
@@ -87,9 +101,20 @@
       margin-right: 4px;
     }
 
-    .tag.rag      { background: #dbeafe; color: #1d4ed8; }
-    .tag.tool     { background: #dcfce7; color: #15803d; }
-    .tag.blocked  { background: #fee2e2; color: #dc2626; }
+    .tag.rag {
+      background: #dbeafe;
+      color: #1d4ed8;
+    }
+
+    .tag.tool {
+      background: #dcfce7;
+      color: #15803d;
+    }
+
+    .tag.blocked {
+      background: #fee2e2;
+      color: #dc2626;
+    }
 
     .message.error {
       align-self: flex-start;
@@ -103,7 +128,7 @@
       background: white;
       border-radius: 12px;
       padding: 8px;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     }
 
     #user-input {
@@ -128,8 +153,14 @@
       transition: background 0.2s;
     }
 
-    #send-btn:hover    { background: #004d33; }
-    #send-btn:disabled { background: #aaa; cursor: not-allowed; }
+    #send-btn:hover {
+      background: #004d33;
+    }
+
+    #send-btn:disabled {
+      background: #aaa;
+      cursor: not-allowed;
+    }
 
     .suggestions {
       display: flex;
@@ -149,7 +180,10 @@
       transition: all 0.2s;
     }
 
-    .suggestion-btn:hover { background: #006241; color: white; }
+    .suggestion-btn:hover {
+      background: #006241;
+      color: white;
+    }
 
     .typing {
       align-self: flex-start;
@@ -158,133 +192,142 @@
       border-radius: 12px;
       color: #888;
       font-style: italic;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     }
   </style>
 </head>
+
 <body>
 
-<header>
-  <div>
-    <h1>🇦🇪 GovMurshid</h1>
-    <p>UAE Government Services Assistant — Powered by AI</p>
-  </div>
-</header>
-
-<div id="chat-container">
-
-  <div class="suggestions">
-    <button class="suggestion-btn" onclick="sendSuggestion('How do I renew my driving license?')">🪪 Driving license</button>
-<button class="suggestion-btn" onclick="sendSuggestion('Check fines for plate AD-1234')">🚗 Check fines</button>
-<button class="suggestion-btn" onclick="sendSuggestion('Book an appointment for driving-license on 2025-03-15')">📅 Book appointment</button>
-<button class="suggestion-btn" onclick="sendSuggestion('How do I register my tenancy contract with Ejari in Dubai?')">🏠 Ejari registration</button>
-<button class="suggestion-btn" onclick="sendSuggestion('How do I get health insurance in Dubai?')">🏥 Health insurance</button>
-<button class="suggestion-btn" onclick="sendSuggestion('How do I enroll my child in a Dubai school?')">🎓 School enrollment</button>
-<button class="suggestion-btn" onclick="sendSuggestion('How do I renew my trade license in Dubai?')">💼 Trade license</button>
-<button class="suggestion-btn" onclick="sendSuggestion('How do I apply for a UAE Golden Visa?')">⭐ Golden Visa</button>
-  </div>
-
-  <div id="messages">
-    <div class="message assistant">
-      👋 Hello! I'm <strong>GovMurshid</strong>, your UAE government services assistant.<br/><br/>
-      I can help residents across all 7 emirates with driving licenses, vehicle registration, traffic fines, health insurance, education, housing, business licenses, social support, and more.<br/><br/>
-      How can I help you today?
+  <header>
+    <div>
+      <h1>🇦🇪 GovMurshid</h1>
+      <p>UAE Government Services Assistant — Powered by AI</p>
     </div>
+  </header>
+
+  <div id="chat-container">
+
+    <div class="suggestions">
+      <button class="suggestion-btn" onclick="sendSuggestion('How do I renew my driving license?')">🪪 Driving
+        license</button>
+      <button class="suggestion-btn" onclick="sendSuggestion('Check fines for plate AD-1234')">🚗 Check fines</button>
+      <button class="suggestion-btn"
+        onclick="sendSuggestion('Book an appointment for driving-license on 2025-03-15')">📅 Book appointment</button>
+      <button class="suggestion-btn"
+        onclick="sendSuggestion('How do I register my tenancy contract with Ejari in Dubai?')">🏠 Ejari
+        registration</button>
+      <button class="suggestion-btn" onclick="sendSuggestion('How do I get health insurance in Dubai?')">🏥 Health
+        insurance</button>
+      <button class="suggestion-btn" onclick="sendSuggestion('How do I enroll my child in a Dubai school?')">🎓 School
+        enrollment</button>
+      <button class="suggestion-btn" onclick="sendSuggestion('How do I renew my trade license in Dubai?')">💼 Trade
+        license</button>
+      <button class="suggestion-btn" onclick="sendSuggestion('How do I apply for a UAE Golden Visa?')">⭐ Golden
+        Visa</button>
+      <button class="suggestion-btn" onclick="sendSuggestion('كيف أجدد رخصة القيادة في الإمارات؟')">🪪 تجديد
+        الرخصة</button>
+    </div>
+
+    <div id="messages">
+      <div class="message assistant">
+        👋 Hello! I'm <strong>GovMurshid</strong>, your UAE government services assistant.<br /><br />
+        I can help residents across all 7 emirates with driving licenses, vehicle registration, traffic fines, health
+        insurance, education, housing, business licenses, social support, and more.<br /><br />
+        How can I help you today?
+      </div>
+    </div>
+
+    <div id="input-area">
+      <textarea id="user-input" rows="1" placeholder="Ask about UAE government services..."
+        onkeydown="handleKey(event)"></textarea>
+      <button id="send-btn" onclick="sendMessage()">Send</button>
+    </div>
+
   </div>
 
-  <div id="input-area">
-    <textarea 
-      id="user-input" 
-      rows="1"
-      placeholder="Ask about UAE government services..."
-      onkeydown="handleKey(event)"
-    ></textarea>
-    <button id="send-btn" onclick="sendMessage()">Send</button>
-  </div>
+  <script>
+    const messagesEl = document.getElementById('messages');
+    const inputEl = document.getElementById('user-input');
+    const sendBtn = document.getElementById('send-btn');
 
-</div>
+    function handleKey(e) {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+      }
+    }
 
-<script>
-  const messagesEl = document.getElementById('messages');
-  const inputEl    = document.getElementById('user-input');
-  const sendBtn    = document.getElementById('send-btn');
-
-  function handleKey(e) {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
+    function sendSuggestion(text) {
+      inputEl.value = text;
       sendMessage();
     }
-  }
 
-  function sendSuggestion(text) {
-    inputEl.value = text;
-    sendMessage();
-  }
-
-  function appendMessage(role, html) {
-    const div = document.createElement('div');
-    div.className = `message ${role}`;
-    div.innerHTML = html;
-    messagesEl.appendChild(div);
-    messagesEl.scrollTop = messagesEl.scrollHeight;
-    return div;
-  }
-
-  async function sendMessage() {
-    const text = inputEl.value.trim();
-    if (!text) return;
-
-    inputEl.value = '';
-    sendBtn.disabled = true;
-
-    appendMessage('user', escapeHtml(text));
-
-    const typing = appendMessage('typing', '⏳ Thinking...');
-
-    try {
-      const res = await fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: text })
-      });
-
-      const data = await res.json();
-      typing.remove();
-
-      // Build response HTML
-      let html = escapeHtml(data.reply).replace(/\n/g, '<br/>');
-      let meta = '';
-
-      if (data.guardrail?.triggered) {
-        meta += `<span class="tag blocked">🛡 Guardrail: ${data.guardrail.reason}</span>`;
-      } else if (data.toolUsed) {
-        meta += `<span class="tag tool">🔧 Tool: ${data.toolUsed.name}</span>`;
-      } else if (data.retrievedDocs?.length > 0) {
-        const docList = data.retrievedDocs.map(d => d.id).join(', ');
-        meta += `<span class="tag rag">📄 RAG: ${docList}</span>`;
-      }
-
-      if (meta) html += `<div class="meta">${meta}</div>`;
-
-      appendMessage('assistant', html);
-
-    } catch (err) {
-      typing.remove();
-      appendMessage('error', '⚠️ Could not reach the server. Is it running?');
+    function appendMessage(role, html) {
+      const div = document.createElement('div');
+      div.className = `message ${role}`;
+      div.innerHTML = html;
+      messagesEl.appendChild(div);
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+      return div;
     }
 
-    sendBtn.disabled = false;
-    inputEl.focus();
-  }
+    async function sendMessage() {
+      const text = inputEl.value.trim();
+      if (!text) return;
 
-  function escapeHtml(str) {
-    return str
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;');
-  }
-</script>
+      inputEl.value = '';
+      sendBtn.disabled = true;
+
+      appendMessage('user', escapeHtml(text));
+
+      const typing = appendMessage('typing', '⏳ Thinking...');
+
+      try {
+        const res = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: text })
+        });
+
+        const data = await res.json();
+        typing.remove();
+
+        // Build response HTML
+        let html = escapeHtml(data.reply).replace(/\n/g, '<br/>');
+        let meta = '';
+
+        if (data.guardrail?.triggered) {
+          meta += `<span class="tag blocked">🛡 Guardrail: ${data.guardrail.reason}</span>`;
+        } else if (data.toolUsed) {
+          meta += `<span class="tag tool">🔧 Tool: ${data.toolUsed.name}</span>`;
+        } else if (data.retrievedDocs?.length > 0) {
+          const docList = data.retrievedDocs.map(d => d.id).join(', ');
+          meta += `<span class="tag rag">📄 RAG: ${docList}</span>`;
+        }
+
+        if (meta) html += `<div class="meta">${meta}</div>`;
+
+        appendMessage('assistant', html);
+
+      } catch (err) {
+        typing.remove();
+        appendMessage('error', '⚠️ Could not reach the server. Is it running?');
+      }
+
+      sendBtn.disabled = false;
+      inputEl.focus();
+    }
+
+    function escapeHtml(str) {
+      return str
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+  </script>
 
 </body>
+
 </html>

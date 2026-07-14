@@ -1,3 +1,4 @@
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
@@ -13,13 +14,10 @@ app.use(express.static(path.join(__dirname, '../public')));
 // HELPERS
 // ─────────────────────────────────────────
 
-// Simple keyword-based retrieval (no vector DB needed for the pilot)
-// In a real RAG system this would be an embedding similarity search
 function retrieveRelevantDocs(query, topK = 3) {
   const queryWords = query.toLowerCase().split(/\s+/)
-    .filter(w => w.length > 2); // ignore short words like "do", "is"
+    .filter(w => w.length > 2);
 
-  // Synonym map — common query words → policy keywords
   const synonyms = {
     'expires': ['expiry', 'expired', 'renewal', 'renew'],
     'expired': ['expiry', 'expired', 'renewal'],
@@ -51,7 +49,6 @@ function retrieveRelevantDocs(query, topK = 3) {
     'golden': ['visa', 'long-term', 'residence'],
   };
 
-  // Expand query words with synonyms
   const expandedWords = new Set(queryWords);
   for (const word of queryWords) {
     const syns = synonyms[word] || [];
@@ -70,7 +67,6 @@ function retrieveRelevantDocs(query, topK = 3) {
     for (const word of expandedWords) {
       if (text.includes(word)) score += 1;
     }
-    // Bonus: title match is worth more
     for (const word of queryWords) {
       if (doc.title.toLowerCase().includes(word)) score += 2;
     }
@@ -83,10 +79,148 @@ function retrieveRelevantDocs(query, topK = 3) {
     .slice(0, topK);
 }
 
-// Guardrails — detect out-of-scope or malicious input
+// ─────────────────────────────────────────
+// ARABIC DETECTION + TRANSLATION
+// ─────────────────────────────────────────
+
+// Detect if message contains Arabic characters
+function detectArabic(text) {
+  const arabicPattern = /[\u0600-\u06FF]/;
+  return arabicPattern.test(text);
+}
+
+// Arabic query translation map — common Arabic gov service terms → English
+// Used to translate Arabic queries into English keywords for RAG retrieval
+function translateArabicQuery(text) {
+  const translations = {
+    // ── Driving ──────────────────────────────────────────
+    'رخصة القيادة': 'driving license',
+    'تجديد رخصة القيادة': 'driving license renewal',
+    'رخصة': 'license',
+    'القيادة': 'driving',
+    'تجديد': 'renewal renew',
+    // ── Fines ────────────────────────────────────────────
+    'غرامة': 'fine',
+    'غرامات': 'fines',
+    'مخالفة': 'fine penalty',
+    'مرور': 'traffic',
+    // ── Vehicle ──────────────────────────────────────────
+    'سيارة': 'vehicle',
+    'تسجيل السيارة': 'vehicle registration',
+    'تسجيل': 'registration',
+    // ── Identity ─────────────────────────────────────────
+    'الهوية الإماراتية': 'Emirates ID',
+    'بطاقة الهوية': 'Emirates ID',
+    'هوية': 'Emirates ID',
+    'تأشيرة الإقامة': 'residency visa',
+    'تأشيرة': 'visa',
+    'إقامة ذهبية': 'golden visa',
+    'الإقامة الذهبية': 'golden visa',
+    'فيزا ذهبية': 'golden visa',
+    'التقدم للحصول على الإقامة الذهبية': 'golden visa eligibility investors entrepreneurs',
+    'إقامة': 'residency',
+    'جواز سفر': 'passport',
+    'شهادة ميلاد': 'birth certificate',
+    // ── Healthcare ───────────────────────────────────────
+    'التأمين الصحي إلزامي': 'health insurance mandatory DHA employer',
+    'التأمين الصحي': 'health insurance DHA',
+    'تأمين صحي': 'health insurance',
+    'تأمين': 'insurance',
+    'صحي': 'health',
+    'إلزامي': 'mandatory required',
+    'لياقة طبية': 'medical fitness',
+    'فحص طبي': 'medical fitness',
+    'شهادة لياقة': 'medical fitness certificate',
+    // ── Education ────────────────────────────────────────
+    'مدرسة': 'school',
+    'تعليم': 'education',
+    'تسجيل مدرسي': 'school enrollment',
+    'التسجيل في المدرسة': 'school enrollment KHDA',
+    // ── Housing ──────────────────────────────────────────
+    'عقد الإيجار': 'tenancy contract',
+    'عقد إيجار': 'tenancy contract',
+    'إيجار': 'tenancy rental',
+    'إيجاري': 'Ejari',
+    'توثيق': 'Tawtheeq',
+    'تسجيل عقد الإيجار': 'tenancy contract registration Ejari',
+    // ── Business ─────────────────────────────────────────
+    'ترخيص تجاري': 'trade license',
+    'رخصة تجارية': 'trade license',
+    'ضريبة القيمة المضافة': 'VAT Federal Tax Authority',
+    'ضريبة': 'VAT tax',
+    'عمل حر': 'freelance permit',
+    'فريلانس': 'freelance',
+    // ── Social ───────────────────────────────────────────
+    'دعم اجتماعي': 'social support',
+    'زكاة': 'Zakat',
+    'معاش': 'pension gratuity',
+    'مكافأة نهاية الخدمة': 'end of service gratuity',
+    'نهاية الخدمة': 'end of service gratuity',
+    'ذوي الهمم': 'people of determination disability',
+    // ── Utilities ────────────────────────────────────────
+    'كهرباء': 'electricity DEWA ADDC',
+    'ماء': 'water utility',
+    // ── Appointments ─────────────────────────────────────
+    'حجز موعد': 'book appointment',
+    'موعد': 'appointment',
+    // ── Emirates ─────────────────────────────────────────
+    'الإمارات': 'UAE emirates',
+    'أبوظبي': 'Abu Dhabi',
+    'دبي': 'Dubai',
+    'الشارقة': 'Sharjah',
+    'عجمان': 'Ajman',
+    'رأس الخيمة': 'Ras Al Khaimah',
+    'الفجيرة': 'Fujairah',
+    'أم القيوين': 'Umm Al Quwain',
+    // ── Common question words — translate to empty ────────
+    'كيف': '',
+    'ما هي': '',
+    'ما هو': '',
+    'هل': '',
+    'من': '',
+    'متى': '',
+    'أين': '',
+    'في': '',
+    'على': '',
+    'من يحق له': '',
+    'يحق له': '',
+    'للحصول على': '',
+    'التقدم': '',
+    'أسجل': 'registration',
+    'أجدد': 'renewal',
+    'أحصل': '',
+    'يمكنني': '',
+    'أريد': '',
+  };
+
+  let translated = text;
+
+  // Apply longer phrases first to avoid partial replacements
+  const sortedEntries = Object.entries(translations)
+    .sort((a, b) => b[0].length - a[0].length);
+
+  for (const [arabic, english] of sortedEntries) {
+    translated = translated.replace(new RegExp(arabic, 'g'), english);
+  }
+
+  // Clean up remaining Arabic characters and punctuation
+  translated = translated
+    .replace(/[\u0600-\u06FF]+/g, '') // remove any remaining Arabic
+    .replace(/[؟،]/g, '')             // remove Arabic punctuation
+    .replace(/\s+/g, ' ')             // collapse multiple spaces
+    .trim();
+
+  return translated;
+}
+
+// ─────────────────────────────────────────
+// GUARDRAILS (English + Arabic)
+// ─────────────────────────────────────────
+
 function checkGuardrails(message) {
   const lower = message.toLowerCase();
 
+  // ── English banned phrases ──────────────────────────
   const banned = [
     'ignore previous instructions',
     'ignore all instructions',
@@ -101,12 +235,49 @@ function checkGuardrails(message) {
     'bypass'
   ];
 
+  // ── Arabic banned phrases ───────────────────────────
+  const arabicBanned = [
+    'تجاهل التعليمات',
+    'تجاهل جميع التعليمات',
+    'أنت الآن',
+    'تظاهر بأنك',
+    'انسَ تعليماتك',
+    'تجاوز',
+    'بدون قيود',
+    'بلا قيود',
+    'وضع المطور',
+    'الموجه النظامي',
+    'تجاوز إعداداتك',
+    'تجاوز القيود',
+    'تصرف كمساعد مختلف'
+  ];
+
+  // ── English off-topic ───────────────────────────────
   const offTopic = [
     'weather', 'recipe', 'sports', 'movie', 'music',
     'joke', 'game', 'dating', 'stock', 'crypto', 'bitcoin',
     'football', 'cricket', 'basketball', 'tennis', 'match'
   ];
 
+  // ── Arabic off-topic ────────────────────────────────
+  const arabicOffTopic = [
+    'الطقس',
+    'وصفة',
+    'رياضة',
+    'كرة القدم',
+    'كرة السلة',
+    'مباراة',
+    'فيلم',
+    'موسيقى',
+    'نكتة',
+    'العملات المشفرة',
+    'بيتكوين',
+    'مواعدة',
+    'الأسهم',
+    'البورصة'
+  ];
+
+  // Check English banned
   for (const phrase of banned) {
     if (lower.includes(phrase)) {
       return {
@@ -117,6 +288,18 @@ function checkGuardrails(message) {
     }
   }
 
+  // Check Arabic banned
+  for (const phrase of arabicBanned) {
+    if (message.includes(phrase)) {
+      return {
+        blocked: true,
+        reason: 'prompt_injection',
+        message: 'يمكنني فقط المساعدة في خدمات حكومة الإمارات. لا يمكنني اتباع تعليمات تحاول تغيير سلوكي.'
+      };
+    }
+  }
+
+  // Check English off-topic
   for (const topic of offTopic) {
     if (lower.includes(topic)) {
       return {
@@ -127,10 +310,80 @@ function checkGuardrails(message) {
     }
   }
 
+  // Check Arabic off-topic
+  for (const topic of arabicOffTopic) {
+    if (message.includes(topic)) {
+      return {
+        blocked: true,
+        reason: 'off_topic',
+        message: `أنا GovMurshid، متخصص في خدمات حكومة الإمارات عبر جميع الإمارات السبع. يمكنني المساعدة في الرخص والغرامات والمواعيد والتأشيرات والإسكان والرعاية الصحية والتعليم والأعمال والخدمات الاجتماعية.`
+      };
+    }
+  }
+
   return { blocked: false };
 }
 
-// Call Ollama locally
+// ─────────────────────────────────────────
+// LLM — GROQ API (active)
+// ─────────────────────────────────────────
+
+// Call Groq API (free tier — llama3 in the cloud)
+// Replaced Ollama with Groq for cloud deployment capability
+const Groq = require('groq-sdk');
+const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+
+/*
+// Previous Groq call without retry logic — kept for reference
+async function callOllama(systemPrompt, userMessage) {
+  const completion = await groq.chat.completions.create({
+    model: 'llama-3.1-8b-instant',
+    messages: [
+      { role: 'system', content: systemPrompt },
+      { role: 'user', content: userMessage }
+    ],
+    temperature: 0.3,
+    max_tokens: 1024
+  });
+  return completion.choices[0].message.content;
+}
+*/
+
+// Active Groq call with retry logic for rate limit handling (free tier = 6000 TPM)
+async function callOllama(systemPrompt, userMessage, retries = 3) {
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      const completion = await groq.chat.completions.create({
+        model: 'llama-3.1-8b-instant',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userMessage }
+        ],
+        temperature: 0.3,
+        max_tokens: 1024
+      });
+      return completion.choices[0].message.content;
+    } catch (err) {
+      const isRateLimit = err.status === 429 || err.message?.includes('429');
+      if (isRateLimit && attempt < retries) {
+        const waitMs = attempt * 6000; // 6s, 12s, 18s
+        console.log(`⏳ Groq rate limit hit — waiting ${waitMs / 1000}s before retry ${attempt}/${retries}`);
+        await new Promise(r => setTimeout(r, waitMs));
+        continue;
+      }
+      throw err;
+    }
+  }
+}
+
+// ─────────────────────────────────────────
+// LLM — OLLAMA LOCAL (reference — commented out)
+// ─────────────────────────────────────────
+
+/*
+// Use this to run fully locally without Groq API key
+// Requires Ollama running with llama3.2 pulled: ollama pull llama3.2
+
 async function callOllama(systemPrompt, userMessage) {
   const response = await fetch('http://localhost:11434/api/chat', {
     method: 'POST',
@@ -152,22 +405,38 @@ async function callOllama(systemPrompt, userMessage) {
   const data = await response.json();
   return data.message.content;
 }
+*/
 
-// Detect if the user wants to use an agent tool
+// ─────────────────────────────────────────
+// TOOL INTENT DETECTION (English + Arabic)
+// ─────────────────────────────────────────
+
 function detectToolIntent(message) {
   const lower = message.toLowerCase();
 
-  if (lower.includes('fine') && (lower.includes('plate') || lower.match(/[a-z]{2,3}-\d{3,4}/i))) {
-    const plateMatch = message.match(/[A-Z]{2,3}-\d{3,4}/i);
-    if (plateMatch) {
-      return { tool: 'checkFineStatus', params: { plateNumber: plateMatch[0] } };
-    }
+  // Plate number match — works for both English and Arabic messages
+  const plateMatch = message.match(/[A-Z]{2,3}-\d{3,4}/i);
+
+  // Arabic intent keywords
+  const isArabicFineCheck = /غرامة|غرامات|مخالفة|تحقق من|لوحة/.test(message);
+  const isArabicBooking = /حجز موعد|أحجز|موعد/.test(message);
+
+  // Fine check — English or Arabic
+  if (plateMatch && (
+    lower.includes('fine') ||
+    lower.includes('plate') ||
+    isArabicFineCheck
+  )) {
+    return { tool: 'checkFineStatus', params: { plateNumber: plateMatch[0] } };
   }
 
-  if (lower.includes('book') || lower.includes('appointment')) {
+  // Appointment booking — English or Arabic
+  if (lower.includes('book') || lower.includes('appointment') || isArabicBooking) {
     const services = ['driving-license', 'vehicle-registration', 'emirates-id', 'residency-visa', 'health-card'];
     const dateMatch = message.match(/\d{4}-\d{2}-\d{2}/);
-    const serviceMatch = services.find(s => lower.includes(s.replace('-', ' ')) || lower.includes(s));
+    const serviceMatch = services.find(s =>
+      lower.includes(s.replace('-', ' ')) || lower.includes(s)
+    );
 
     if (serviceMatch && dateMatch) {
       return { tool: 'bookAppointment', params: { service: serviceMatch, date: dateMatch[0] } };
@@ -202,9 +471,9 @@ const ACTIVE_SYSTEM_PROMPT = SYSTEM_PROMPT_PRODUCTION;
 // ROUTES
 // ─────────────────────────────────────────
 
-// Health check — used by tests to confirm server is up
+// Health check
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', version: '1.0.0', model: 'llama3.2', name: 'GovMurshid' });
+  res.json({ status: 'ok', version: '1.0.0', model: 'groq/llama-3.1-8b-instant', name: 'GovMurshid' });
 });
 
 // Policy search — returns raw retrieved docs (used by RAG eval tests)
@@ -215,7 +484,7 @@ app.get('/api/policies/search', (req, res) => {
   res.json({ query: q, results: docs });
 });
 
-// Tool endpoints — called directly by agent tests
+// Tool endpoints
 app.get('/api/tools/fines/:plateNumber', (req, res) => {
   const result = checkFineStatus(req.params.plateNumber);
   res.json(result);
@@ -238,7 +507,7 @@ app.post('/api/chat', async (req, res) => {
     return res.status(400).json({ error: 'Missing or invalid message' });
   }
 
-  // 1. Guardrails check
+  // 1. Guardrails check (English + Arabic)
   const guard = checkGuardrails(message);
   if (guard.blocked) {
     return res.json({
@@ -249,7 +518,10 @@ app.post('/api/chat', async (req, res) => {
     });
   }
 
-  // 2. Tool intent detection (agentic layer)
+  // 2. Detect language early — needed for retrieval + tool replies
+  const isArabic = detectArabic(message);
+
+  // 3. Tool intent detection (agentic layer) — English + Arabic
   const toolIntent = detectToolIntent(message);
   if (toolIntent) {
     let toolResult;
@@ -259,30 +531,54 @@ app.post('/api/chat', async (req, res) => {
       toolResult = bookAppointment(toolIntent.params.service, toolIntent.params.date);
     }
 
+    // Reply in Arabic if message was in Arabic
+    let toolReply = toolResult.message;
+    if (isArabic && toolIntent.tool === 'checkFineStatus') {
+      toolReply = toolResult.unpaidTotal > 0
+        ? `لديك مبلغ ${toolResult.unpaidTotal} درهم كغرامات غير مدفوعة للوحة ${toolResult.plateNumber}.`
+        : `جميع الغرامات مدفوعة للوحة ${toolResult.plateNumber}.`;
+    }
+    if (isArabic && toolIntent.tool === 'bookAppointment') {
+      toolReply = toolResult.success
+        ? `تم تأكيد الموعد! رقم المرجع: ${toolResult.confirmationNumber}. التاريخ: ${toolResult.date}. الموقع: ${toolResult.location}.`
+        : `عذراً، ${toolResult.message}`;
+    }
+
     return res.json({
-      reply: toolResult.message,
+      reply: toolReply,
       guardrail: { triggered: false },
       retrievedDocs: [],
-      toolUsed: { name: toolIntent.tool, params: toolIntent.params, result: toolResult }
+      toolUsed: { name: toolIntent.tool, params: toolIntent.params, result: toolResult },
+      language: isArabic ? 'ar' : 'en'
     });
   }
 
-  // 3. RAG — retrieve relevant policy docs
-  const docs = retrieveRelevantDocs(message);
+  // 4. RAG — retrieve relevant policy docs
+  // Translate Arabic query to English keywords before matching
+  const retrievalQuery = isArabic ? translateArabicQuery(message) : message;
+  const docs = retrieveRelevantDocs(retrievalQuery);
 
   if (docs.length === 0) {
+    const noResultReply = isArabic
+      ? 'لم أتمكن من العثور على معلومات ذات صلة في قاعدة بيانات السياسات. يرجى زيارة البوابة الإلكترونية للإمارة المعنية للحصول على المساعدة.'
+      : "I couldn't find relevant information in our policy database. Please visit the relevant UAE emirate portal for assistance.";
     return res.json({
-      reply: "I couldn't find relevant information in our policy database. Please visit the relevant UAE emirate portal for assistance.",
+      reply: noResultReply,
       guardrail: { triggered: false },
       retrievedDocs: [],
-      toolUsed: null
+      toolUsed: null,
+      language: isArabic ? 'ar' : 'en'
     });
   }
 
-  // 4. Build grounded prompt and call LLM
+  // 5. Build grounded prompt and call LLM
   const context = docs.map(d => `[${d.id}] ${d.title}:\n${d.content}`).join('\n\n');
 
-  const systemPrompt = `${ACTIVE_SYSTEM_PROMPT}
+  const languageInstruction = isArabic
+    ? `\nالمستخدم يكتب بالعربية. يجب أن تجيب باللغة العربية الفصحى الحديثة بالكامل. احتفظ بمعرّفات السياسات مثل POL-001 باللغة الإنجليزية.`
+    : `\nRespond in English.`;
+
+  const systemPrompt = `${ACTIVE_SYSTEM_PROMPT}${languageInstruction}
 
 POLICY CONTEXT:
 ${context}`;
@@ -293,7 +589,8 @@ ${context}`;
       reply: llmReply,
       guardrail: { triggered: false },
       retrievedDocs: docs.map(d => ({ id: d.id, title: d.title, score: d.score })),
-      toolUsed: null
+      toolUsed: null,
+      language: isArabic ? 'ar' : 'en'
     });
   } catch (err) {
     console.error('LLM error:', err.message);
@@ -308,6 +605,8 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`GovMurshid server running at http://localhost:${PORT}`);
   console.log(`Health check: http://localhost:${PORT}/api/health`);
+  console.log(`LLM: Groq API (llama-3.1-8b-instant)`);
+  console.log(`Arabic support: enabled (detection + translation + guardrails + tool replies)`);
 });
 
 module.exports = app;

@@ -3,85 +3,118 @@
  * GovMurshid Production Eval Simulator
  *
  * Simulates online evaluation of production traffic:
- * 1. Takes a sample of "real" user queries
+ * 1. Takes a sample of "real" user queries (English + Arabic)
  * 2. Sends them to GovMurshid
- * 3. Scores responses with LLM-as-judge
+ * 3. Scores responses with LLM-as-judge via Groq SDK
  * 4. Records results in metrics store
  * 5. Flags failures for golden dataset feedback loop
- *
- * In production this would run against real (anonymised) traffic.
  */
 
+require('dotenv').config();
 const { recordRun } = require('../observability/metrics-store');
 const fs   = require('fs');
 const path = require('path');
+const Groq = require('groq-sdk');
 
-const BASE_URL = process.env.BASE_URL || 'http://localhost:3000';
-const OLLAMA_URL = 'http://localhost:11434/api/chat';
+const BASE_URL     = process.env.BASE_URL || 'http://localhost:3000';
+const GROQ_API_KEY = process.env.GROQ_API_KEY;
+const groqClient   = new Groq({ apiKey: GROQ_API_KEY });
 
-// Simulated production traffic sample
-// In real life these come from your logging pipeline (anonymised)
 const PROD_TRAFFIC_SAMPLE = [
+  // ── English queries ──────────────────────────────────
   {
     id: 'PROD-001',
     query: 'How do I renew my driving license in Abu Dhabi?',
     expectedTopics: ['Emirates ID', 'eye test', 'service center'],
-    category: 'driving'
+    category: 'driving',
+    language: 'en'
   },
   {
     id: 'PROD-002',
     query: 'What is the fine for overstaying my visa in UAE?',
     expectedTopics: ['AED 25', 'grace period', 'overstay'],
-    category: 'identity'
+    category: 'identity',
+    language: 'en'
   },
   {
     id: 'PROD-003',
     query: 'How do I connect electricity in my new Dubai apartment?',
     expectedTopics: ['DEWA', 'Ejari', 'deposit'],
-    category: 'utilities'
+    category: 'utilities',
+    language: 'en'
   },
   {
     id: 'PROD-004',
     query: 'Can a foreigner buy property in Dubai?',
     expectedTopics: ['freehold', 'designated areas', 'registration'],
-    category: 'housing'
+    category: 'housing',
+    language: 'en'
   },
   {
     id: 'PROD-005',
     query: 'What is the minimum salary to sponsor family in UAE?',
     expectedTopics: ['AED 4,000', 'sponsorship', 'family'],
-    category: 'identity'
+    category: 'identity',
+    language: 'en'
   },
   {
     id: 'PROD-006',
     query: 'How do I get a freelance visa in UAE?',
     expectedTopics: ['free zone', 'permit', 'Shams'],
-    category: 'business'
+    category: 'business',
+    language: 'en'
   },
   {
     id: 'PROD-007',
     query: 'What schools are regulated by KHDA in Dubai?',
     expectedTopics: ['KHDA', 'private school', 'Dubai'],
-    category: 'education'
+    category: 'education',
+    language: 'en'
   },
   {
     id: 'PROD-008',
-    query: 'How do I apply for social support in Abu Dhabi?',
-    expectedTopics: ['Department of Community Development', 'TAMM', 'Emirates ID'],
-    category: 'social'
+    query: 'How long does it take to process an Emirates ID renewal?',
+    expectedTopics: ['3', '5', 'business days'],
+    category: 'identity',
+    language: 'en'
   },
+
+  // ── Arabic queries ───────────────────────────────────
   {
     id: 'PROD-009',
-    query: 'Is VAT applicable on all businesses in UAE?',
-    expectedTopics: ['AED 375,000', 'Federal Tax Authority', '5%'],
-    category: 'business'
+    query: 'كيف أجدد رخصة القيادة في الإمارات؟',
+    expectedTopics: ['الهوية الإماراتية', 'اختبار النظر', 'مركز الخدمة'],
+    category: 'driving',
+    language: 'ar'
   },
   {
     id: 'PROD-010',
-    query: 'How long does it take to process an Emirates ID renewal?',
-    expectedTopics: ['3', '5', 'business days'],
-    category: 'identity'
-  }
+    query: 'هل التأمين الصحي إلزامي في دبي؟',
+    expectedTopics: ['إلزامي', 'دبي', 'صاحب العمل'],
+    category: 'healthcare',
+    language: 'ar'
+  },
+  {
+    id: 'PROD-011',
+    query: 'ما هي متطلبات تجديد تأشيرة الإقامة في الإمارات؟',
+    expectedTopics: ['جواز السفر', 'الهوية الإماراتية', 'اللياقة الطبية'],
+    category: 'identity',
+    language: 'ar'
+  },
+  {
+    id: 'PROD-012',
+    query: 'كيف أسجل عقد الإيجار في دبي؟',
+    expectedTopics: ['إيجاري', 'دبي', 'عقد الإيجار'],
+    category: 'housing',
+    language: 'ar'
+  },
+  {
+    id: 'PROD-013',
+    query: 'من يحق له التقدم للحصول على الإقامة الذهبية؟',
+    expectedTopics: ['المستثمرون', 'المواهب', 'سنوات'],
+    category: 'identity',
+    language: 'ar'
+  },
 ];
 
 // ── Helpers ───────────────────────────────────────────────
@@ -94,8 +127,25 @@ async function sendChat(message) {
   return res.json();
 }
 
-async function judgeResponse(query, response, expectedTopics) {
-  const prompt = `You are a quality evaluator for a UAE government services AI assistant.
+async function judgeResponse(query, response, expectedTopics, language) {
+  const isArabic = language === 'ar';
+
+  const prompt = isArabic
+    ? `أنت مقيّم جودة لمساعد ذكاء اصطناعي لخدمات حكومة الإمارات.
+
+سؤال المستخدم: "${query}"
+رد الذكاء الاصطناعي: "${response}"
+المواضيع المتوقع تغطيتها: ${expectedTopics.join(', ')}
+
+قيّم ما إذا كان الرد:
+1. ذا صلة بالسؤال
+2. يغطي على الأقل أحد المواضيع المتوقعة
+3. باللغة العربية
+4. مهني ودقيق
+
+أجب فقط بكائن JSON هكذا:
+{"pass": true, "score": 0.9, "reason": "سبب مختصر"}`
+    : `You are a quality evaluator for a UAE government services AI assistant.
 
 User query: "${query}"
 AI response: "${response}"
@@ -111,17 +161,15 @@ Reply with ONLY a JSON object like this:
 {"pass": true, "score": 0.9, "reason": "brief reason"}`;
 
   try {
-    const res = await fetch(OLLAMA_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'llama3.2',
-        stream: false,
-        messages: [{ role: 'user', content: prompt }]
-      })
+    // Using Groq SDK instead of raw fetch to avoid response parsing issues
+    const completion = await groqClient.chat.completions.create({
+      model: 'llama-3.1-8b-instant',
+      messages: [{ role: 'user', content: prompt }],
+      temperature: 0.1,
+      max_tokens: 200
     });
-    const data = await res.json();
-    const text = data.message.content.trim();
+
+    const text = completion.choices[0].message.content.trim();
     const jsonMatch = text.match(/\{.*\}/s);
     if (jsonMatch) return JSON.parse(jsonMatch[0]);
     return { pass: false, score: 0, reason: 'Could not parse judge response' };
@@ -134,53 +182,50 @@ Reply with ONLY a JSON object like this:
 async function runProdEval() {
   console.log('🔍 GovMurshid Production Eval Simulator');
   console.log('════════════════════════════════════════\n');
-  console.log(`Evaluating ${PROD_TRAFFIC_SAMPLE.length} sampled production queries...\n`);
+  console.log(`Evaluating ${PROD_TRAFFIC_SAMPLE.length} sampled queries (English + Arabic)...\n`);
 
-  const results = [];
+  const results  = [];
   const failures = [];
 
   for (const sample of PROD_TRAFFIC_SAMPLE) {
-    process.stdout.write(`  [${sample.id}] ${sample.query.substring(0, 50)}... `);
+    const langTag = sample.language === 'ar' ? '🇦🇪' : '🇬🇧';
+    process.stdout.write(`  ${langTag} [${sample.id}] ${sample.query.substring(0, 45)}... `);
 
     try {
-      // 1. Get response from GovMurshid
       const chatResponse = await sendChat(sample.query);
 
       if (chatResponse.guardrail?.triggered) {
         console.log('🛡  GUARDRAIL (unexpected)');
         failures.push({ ...sample, reason: 'Unexpectedly blocked by guardrail' });
-        results.push({ id: sample.id, pass: false, score: 0 });
+        results.push({ id: sample.id, pass: false, score: 0, category: sample.category, language: sample.language });
         continue;
       }
 
-      // 2. Judge the response
       const judgment = await judgeResponse(
         sample.query,
         chatResponse.reply,
-        sample.expectedTopics
+        sample.expectedTopics,
+        sample.language
       );
 
       if (judgment.pass) {
         console.log(`✅ PASS (score: ${judgment.score?.toFixed(2) || 'N/A'})`);
       } else {
         console.log(`❌ FAIL — ${judgment.reason}`);
-        failures.push({
-          ...sample,
-          actualResponse: chatResponse.reply,
-          reason: judgment.reason
-        });
+        failures.push({ ...sample, actualResponse: chatResponse.reply, reason: judgment.reason });
       }
 
       results.push({
         id: sample.id,
         pass: judgment.pass,
         score: judgment.score || 0,
-        category: sample.category
+        category: sample.category,
+        language: sample.language
       });
 
     } catch (err) {
       console.log(`💥 ERROR: ${err.message}`);
-      results.push({ id: sample.id, pass: false, score: 0 });
+      results.push({ id: sample.id, pass: false, score: 0, category: sample.category, language: sample.language });
     }
   }
 
@@ -189,9 +234,16 @@ async function runProdEval() {
   const total    = results.length;
   const passRate = passed / total;
 
+  const enResults = results.filter(r => r.language === 'en');
+  const arResults = results.filter(r => r.language === 'ar');
+  const enPassed  = enResults.filter(r => r.pass).length;
+  const arPassed  = arResults.filter(r => r.pass).length;
+
   console.log('\n════════════════════════════════════════');
   console.log('📊 Production Eval Summary\n');
-  console.log(`Passed:    ${passed}/${total} (${(passRate * 100).toFixed(1)}%)`);
+  console.log(`Overall:  ${passed}/${total} (${(passRate * 100).toFixed(1)}%)`);
+  console.log(`🇬🇧 English: ${enPassed}/${enResults.length}`);
+  console.log(`🇦🇪 Arabic:  ${arPassed}/${arResults.length}`);
 
   // Category breakdown
   const categories = {};
@@ -207,18 +259,12 @@ async function runProdEval() {
     console.log(`  ${icon} ${cat.padEnd(12)} ${scores.pass}/${scores.total}`);
   }
 
-  // ── Record in metrics store ──────────────────────────────
-  const run = {
-    type: 'prod_eval',
-    total,
-    passed,
-    passRate,
-    categoryScores: categories
-  };
+  // Record in metrics store
+  const run = { type: 'prod_eval', total, passed, passRate, categoryScores: categories };
   recordRun(run);
   console.log('\n📈 Results recorded in metrics store');
 
-  // ── Feedback loop — flag failures ────────────────────────
+  // Feedback loop
   if (failures.length > 0) {
     console.log(`\n🔄 Feedback Loop — ${failures.length} failure(s) flagged for golden dataset:`);
     const feedbackPath = path.join(__dirname, '../../eval/golden-dataset/feedback-candidates.json');
@@ -231,6 +277,7 @@ async function runProdEval() {
       source: 'prod_eval',
       date: new Date().toISOString(),
       category: f.category,
+      language: f.language,
       input: f.query,
       expectedFacts: f.expectedTopics,
       failureReason: f.reason,
@@ -238,12 +285,10 @@ async function runProdEval() {
     }));
 
     fs.writeFileSync(feedbackPath, JSON.stringify([...existing, ...newCandidates], null, 2));
-
     newCandidates.forEach(c => {
       console.log(`  → [${c.id}] "${c.input.substring(0, 50)}..."`);
       console.log(`    Reason: ${c.failureReason}`);
     });
-
     console.log(`\n  Saved to eval/golden-dataset/feedback-candidates.json`);
     console.log('  Review and promote to golden dataset via PR.\n');
   } else {

@@ -27,11 +27,23 @@ const chatDuration = new Trend('chat_duration', true);
 
 // Test configuration
 export const options = {
+  /*
   stages: [
     { duration: '10s', target: 5 },  // ramp up to 5 users
     { duration: '30s', target: 5 },  // hold at 5 users
     { duration: '10s', target: 0 },  // ramp down
   ],
+
+*/
+
+// just to try with 3 users as groq is free tier and has a limit of 3 users
+
+stages: [
+  { duration: '10s', target: 3 },  // ramp up to 3 users (Groq free tier limit)
+  { duration: '30s', target: 3 },  // hold at 3 users
+  { duration: '10s', target: 0 },  // ramp down
+],
+
   thresholds: {
     // Health and search must be fast
     'http_req_duration{endpoint:health}':  ['p(95)<500'],

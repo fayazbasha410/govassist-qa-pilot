@@ -100,6 +100,10 @@ const GUARDRAIL_INPUTS = {
     'recommend a good recipe for biryani',
     'who won the football match last night?',
     'what is the bitcoin price?'
+  ],
+  arabicOffTopic: [
+    'ما هو الطقس في دبي اليوم؟',
+    'أخبرني نكتة',
   ]
 };
 
@@ -114,7 +118,14 @@ const CHAT_MESSAGES = {
   business: 'How do I renew my trade license?',
   social: 'How do I apply for social support in the UAE?',
   finePlate: 'Check fines for plate AD-1234',
-  bookAppointment: 'Book an appointment for driving-license on 2025-03-15'
+  bookAppointment: 'Book an appointment for driving-license on 2025-03-15',
+
+  // Arabic messages
+  arabicDrivingLicense: 'كيف أجدد رخصة القيادة في الإمارات؟',
+  arabicEjari: 'كيف أقوم بتسجيل عقد الإيجار في دبي؟',
+  arabicHealthInsurance: 'هل التأمين الصحي إلزامي في دبي؟',
+  arabicFineCheck: 'تحقق من الغرامات الخاصة باللوحة AD-1234',
+  arabicGoldenVisa: 'من يحق له التقدم للحصول على الإقامة الذهبية؟',
 };
 
 module.exports = {
