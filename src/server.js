@@ -10,123 +10,162 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, '../public')));
 
-
 // ─────────────────────────────────────────
-// MULTI-TURN MEMORY
+// SESSION / MULTI-TURN MEMORY
 // ─────────────────────────────────────────
 
-const SESSION_MAX_TURNS = 6;
-const SESSION_TTL_MS = 30 * 60 * 1000;
 const sessions = new Map();
+const SESSION_MAX_TURNS = 6;
+const SESSION_TTL_MS = 30 * 60 * 1000; // 30 minutes
 
+// Topic groups — used to detect topic changes and enrich follow-ups
 const TOPIC_GROUPS = {
-  driving: ['driving', 'license', 'licence', 'renew driving', 'vehicle registration', 'mulkiya', 'traffic fine', 'plate'],
-  school: ['school', 'enroll', 'enrollment', 'education', 'khda', 'adek', 'spea', 'child', 'kindergarten', 'university'],
-  insurance: ['insurance', 'health card', 'dha', 'haad', 'doh', 'whi'],
-  visa: ['visa', 'residency', 'residence', 'golden visa', 'icp', 'gdrfa', 'passport', 'emirates id', 'birth certificate'],
-  housing: ['tenancy', 'ejari', 'tawtheeq', 'rent', 'lease', 'landlord', 'tasdeeq', 'dewa', 'addc', 'sewa', 'property'],
-  business: ['trade license', 'business license', 'ded', 'sedd', 'rakez', 'ffza', 'vat', 'tax', 'freelance'],
-  social: ['social support', 'gratuity', 'end of service', 'zakat', 'pension', 'people of determination'],
+  driving:  ['driving', 'license', 'licence', 'vehicle', 'registration', 'traffic', 'fine', 'fines', 'plate', 'renew', 'renewal', 'road', 'car'],
+  school:   ['school', 'education', 'enroll', 'enrollment', 'student', 'khda', 'adek', 'university', 'college', 'child', 'kindergarten', 'kg'],
+  insurance:['insurance', 'health', 'dha', 'daman', 'coverage', 'medical', 'clinic', 'hospital'],
+  visa:     ['visa', 'residency', 'residence', 'emirates id', 'eid', 'passport', 'golden', 'permit', 'immigration', 'ica'],
+  housing:  ['housing', 'tenancy', 'tenant', 'rent', 'rental', 'ejari', 'tawtheeq', 'apartment', 'flat', 'property'],
+  business: ['business', 'trade', 'license', 'freelance', 'vat', 'tax', 'commercial', 'company', 'startup', 'added', 'ded'],
+  social:   ['social', 'support', 'gratuity', 'pension', 'disability', 'determination', 'zakat', 'welfare', 'end of service'],
+  utilities:['electricity', 'water', 'dewa', 'addc', 'utility', 'bill'],
 };
+
+// Known emirates for follow-up detection
+const EMIRATES = ['abu dhabi', 'dubai', 'sharjah', 'ajman', 'umm al quwain', 'ras al khaimah', 'fujairah', 'uaq', 'rak'];
 
 function detectTopicGroup(text) {
   const lower = text.toLowerCase();
+  const scores = {};
   for (const [group, keywords] of Object.entries(TOPIC_GROUPS)) {
-    if (keywords.some(k => lower.includes(k))) return group;
+    scores[group] = keywords.filter(k => lower.includes(k)).length;
   }
-  return null;
+  const best = Object.entries(scores).sort((a, b) => b[1] - a[1])[0];
+  return best && best[1] > 0 ? best[0] : null;
+}
+
+function detectEmirate(text) {
+  const lower = text.toLowerCase();
+  return EMIRATES.find(e => lower.includes(e)) || null;
 }
 
 function getSession(sessionId) {
   if (!sessions.has(sessionId)) {
     sessions.set(sessionId, {
-      history: [],
-      currentTopic: null,
+      history: [],          // [{role, content}]
+      currentTopic: null,   // e.g. 'driving'
+      currentEmirate: null, // e.g. 'dubai'
       topicChanged: false,
-      lastActive: Date.now()
+      lastActivity: Date.now(),
     });
   }
   const session = sessions.get(sessionId);
-  session.lastActive = Date.now();
+  session.lastActivity = Date.now();
   return session;
 }
 
-function addToHistory(sessionId, role, content) {
-  const session = getSession(sessionId);
+function addToHistory(session, role, content) {
   session.history.push({ role, content });
-  if (session.history.length > SESSION_MAX_TURNS) {
-    session.history = session.history.slice(-SESSION_MAX_TURNS);
+  // Sliding window — keep last N turns
+  if (session.history.length > SESSION_MAX_TURNS * 2) {
+    session.history = session.history.slice(-SESSION_MAX_TURNS * 2);
   }
 }
 
-function clearSession(sessionId) {
-  sessions.delete(sessionId);
-}
-
+// Clean up expired sessions every 10 minutes
 setInterval(() => {
   const now = Date.now();
   for (const [id, session] of sessions.entries()) {
-    if (now - session.lastActive > SESSION_TTL_MS) {
+    if (now - session.lastActivity > SESSION_TTL_MS) {
       sessions.delete(id);
-      console.log(`🗑 Session ${id} expired and cleared`);
     }
   }
 }, 10 * 60 * 1000);
 
-
 // ─────────────────────────────────────────
-// HELPERS
+// FOLLOW-UP ENRICHMENT
 // ─────────────────────────────────────────
+//
+// Detects short follow-up messages like "how about sharjah?" or "what about dubai?"
+// and rewrites them into a full query using the session's remembered topic.
+//
+// Examples:
+//   "how about sharjah" + topic=driving + emirate=dubai
+//     → "driving license renewal sharjah"
+//   "how about abu dhabi" + topic=school + emirate=dubai
+//     → "school enrollment abu dhabi"
 
-const EMIRATES = [
-  'abu dhabi', 'dubai', 'sharjah', 'ajman',
-  'umm al quwain', 'ras al khaimah', 'fujairah'
+const FOLLOW_UP_TRIGGERS = [
+  /^how about (.+)/i,
+  /^what about (.+)/i,
+  /^and (.+)/i,
+  /^in (.+)/i,
+  /^for (.+)/i,
+  /^what (about )?(.+)/i,
 ];
 
-const PLATE_PATTERN = /\b[A-Z]{1,3}[-\s]?\d{3,5}\b/i;
-
-function isShortFollowUp(message) {
-  const wordCount = message.trim().split(/\s+/).length;
-  const hasTopic = detectTopicGroup(message) !== null;
-  return wordCount <= 8 && !hasTopic;
+function isFollowUp(message) {
+  const lower = message.trim().toLowerCase();
+  // Short message that only mentions an emirate (or very few words) is a follow-up
+  if (lower.split(/\s+/).length <= 4 && EMIRATES.some(e => lower.includes(e))) return true;
+  return FOLLOW_UP_TRIGGERS.some(r => r.test(lower));
 }
 
+function enrichFollowUp(message, session) {
+  const detectedEmirate = detectEmirate(message);
+  const detectedTopic = detectTopicGroup(message);
+
+  // Use detected topic or remembered topic
+  const topic = detectedTopic || session.currentTopic;
+  // Use detected emirate or remembered emirate
+  const emirate = detectedEmirate || session.currentEmirate;
+
+  // If we can't infer anything useful, return original
+  if (!topic && !emirate) return message;
+
+  // Build enriched query from topic keywords + emirate
+  const topicKeywords = topic ? TOPIC_GROUPS[topic].slice(0, 3).join(' ') : '';
+  const enriched = [topicKeywords, emirate].filter(Boolean).join(' ');
+
+  console.log(`🧠 Follow-up enrichment: "${message}" → "${enriched}" (topic: ${topic}, emirate: ${emirate})`);
+  return enriched;
+}
+
+// ─────────────────────────────────────────
+// RAG RETRIEVAL — with emirate boost
+// ─────────────────────────────────────────
+
 function retrieveRelevantDocs(query, topK = 5) {
-  const queryLower = query.toLowerCase();
-  const queryWords = queryLower.split(/\s+/).filter(w => w.length > 2);
+  const queryWords = query.toLowerCase().split(/\s+/).filter(w => w.length > 2);
 
   const synonyms = {
-    'expires': ['expiry', 'expired', 'renewal', 'renew'],
-    'expired': ['expiry', 'expired', 'renewal'],
-    'register': ['registration', 'registered'],
+    'expires':      ['expiry', 'expired', 'renewal', 'renew'],
+    'expired':      ['expiry', 'expired', 'renewal'],
+    'register':     ['registration', 'registered'],
     'registration': ['register', 'registered', 'mandatory', 'threshold'],
-    'renew': ['renewal', 'renewing', 'renewed'],
-    'renewal': ['renew', 'renewed'],
-    'pay': ['payment', 'paying', 'paid'],
-    'payment': ['pay', 'paid'],
-    'apply': ['application', 'applying'],
-    'application': ['apply', 'applying'],
-    'mandatory': ['required', 'compulsory', 'must'],
-    'required': ['mandatory', 'compulsory', 'requirement'],
-    'documents': ['document', 'documentation', 'requirements'],
-    'license': ['licence', 'licensed'],
-    'fine': ['fines', 'penalty', 'penalties'],
-    'fines': ['fine', 'penalty', 'penalties'],
-    'school': ['education', 'enrollment', 'enroll'],
-    'enroll': ['enrollment', 'school', 'education'],
-    'enrollment': ['enroll', 'school', 'education'],
-    'insurance': ['insured', 'coverage', 'health'],
-    'health': ['healthcare', 'insurance', 'medical'],
-    'healthcare': ['health', 'insurance', 'medical'],
-    'tenancy': ['tenant', 'rent', 'rental', 'contract'],
-    'contract': ['tenancy', 'rental', 'agreement'],
-    'visa': ['residency', 'residence', 'permit'],
-    'benefits': ['gratuity', 'entitlement', 'service'],
-    'gratuity': ['benefits', 'entitlement', 'end of service'],
-    'trade': ['business', 'commercial', 'license'],
-    'vat': ['tax', 'value added', 'federal tax', 'taxable', 'supplies'],
-    'threshold': ['exceeding', 'mandatory', 'registration', 'taxable'],
-    'golden': ['visa', 'long-term', 'residence'],
+    'renew':        ['renewal', 'renewing', 'renewed'],
+    'renewal':      ['renew', 'renewed'],
+    'pay':          ['payment', 'paying', 'paid'],
+    'payment':      ['pay', 'paid'],
+    'apply':        ['application', 'applying'],
+    'application':  ['apply', 'applying'],
+    'mandatory':    ['required', 'compulsory', 'must'],
+    'required':     ['mandatory', 'compulsory', 'requirement'],
+    'documents':    ['document', 'documentation', 'requirements'],
+    'license':      ['licence', 'licensed'],
+    'fine':         ['fines', 'penalty', 'penalties'],
+    'fines':        ['fine', 'penalty', 'penalties'],
+    'school':       ['education', 'enrollment', 'enroll'],
+    'enroll':       ['enrollment', 'school', 'education'],
+    'insurance':    ['insured', 'coverage', 'health'],
+    'tenancy':      ['tenant', 'rent', 'rental', 'contract'],
+    'contract':     ['tenancy', 'rental', 'agreement'],
+    'visa':         ['residency', 'residence', 'permit'],
+    'benefits':     ['gratuity', 'entitlement', 'service'],
+    'gratuity':     ['benefits', 'entitlement', 'end of service'],
+    'trade':        ['business', 'commercial', 'license'],
+    'vat':          ['tax', 'value added', 'federal tax', 'taxable', 'supplies'],
+    'threshold':    ['exceeding', 'mandatory', 'registration', 'taxable'],
+    'golden':       ['visa', 'long-term', 'residence'],
   };
 
   const expandedWords = new Set(queryWords);
@@ -135,30 +174,41 @@ function retrieveRelevantDocs(query, topK = 5) {
     syns.forEach(s => expandedWords.add(s));
   }
 
-  // Pick the LAST emirate mentioned so "Sharjah what about Dubai" → Dubai
-  let mentionedEmirate = null;
-  for (const e of EMIRATES) {
-    if (queryLower.includes(e)) mentionedEmirate = e;
-  }
+  // Detect emirate in the query for boosting
+  const queryEmirate = detectEmirate(query);
 
   const scored = policies.map(doc => {
     const text = (
-      doc.title + ' ' + doc.content + ' ' +
-      (doc.emirate || '') + ' ' + (doc.category || '')
+      doc.title + ' ' +
+      doc.content + ' ' +
+      (doc.emirate || '') + ' ' +
+      (doc.category || '')
     ).toLowerCase();
 
     let score = 0;
+
+    // Keyword match score
     for (const word of expandedWords) {
       if (text.includes(word)) score += 1;
     }
+
+    // Title bonus
     for (const word of queryWords) {
       if (doc.title.toLowerCase().includes(word)) score += 2;
     }
-    if (mentionedEmirate) {
+
+    // ✅ Emirate boost — prioritise emirate-specific policies
+    if (queryEmirate) {
       const docEmirate = (doc.emirate || '').toLowerCase();
-      if (docEmirate === mentionedEmirate) score += 5;
-      else if (docEmirate === 'all uae') score += 1;
+      if (docEmirate === queryEmirate) {
+        score += 5; // Strong boost for exact emirate match
+      } else if (docEmirate === 'all uae' || docEmirate === 'uae') {
+        score += 1; // Small boost for all-UAE policies
+      } else if (docEmirate && docEmirate !== queryEmirate) {
+        score -= 2; // Penalty for wrong emirate
+      }
     }
+
     return { ...doc, score };
   });
 
@@ -168,51 +218,102 @@ function retrieveRelevantDocs(query, topK = 5) {
     .slice(0, topK);
 }
 
-
 // ─────────────────────────────────────────
 // ARABIC DETECTION + TRANSLATION
 // ─────────────────────────────────────────
 
 function detectArabic(text) {
-  return /[\u0600-\u06FF]/.test(text);
+  const arabicPattern = /[\u0600-\u06FF]/;
+  return arabicPattern.test(text);
 }
 
 function translateArabicQuery(text) {
   const translations = {
-    'رخصة القيادة': 'driving license', 'تجديد رخصة القيادة': 'driving license renewal',
-    'رخصة': 'license', 'القيادة': 'driving', 'تجديد': 'renewal renew',
-    'غرامة': 'fine', 'غرامات': 'fines', 'مخالفة': 'fine penalty', 'مرور': 'traffic',
-    'سيارة': 'vehicle', 'تسجيل السيارة': 'vehicle registration', 'تسجيل': 'registration',
-    'الهوية الإماراتية': 'Emirates ID', 'بطاقة الهوية': 'Emirates ID', 'هوية': 'Emirates ID',
-    'تأشيرة الإقامة': 'residency visa', 'تأشيرة': 'visa',
-    'إقامة ذهبية': 'golden visa', 'الإقامة الذهبية': 'golden visa', 'فيزا ذهبية': 'golden visa',
+    'رخصة القيادة':                      'driving license',
+    'تجديد رخصة القيادة':               'driving license renewal',
+    'رخصة':                              'license',
+    'القيادة':                           'driving',
+    'تجديد':                             'renewal renew',
+    'غرامة':                             'fine',
+    'غرامات':                            'fines',
+    'مخالفة':                            'fine penalty',
+    'مرور':                              'traffic',
+    'سيارة':                             'vehicle',
+    'تسجيل السيارة':                     'vehicle registration',
+    'تسجيل':                             'registration',
+    'الهوية الإماراتية':                 'Emirates ID',
+    'بطاقة الهوية':                      'Emirates ID',
+    'هوية':                              'Emirates ID',
+    'تأشيرة الإقامة':                    'residency visa',
+    'تأشيرة':                            'visa',
+    'إقامة ذهبية':                       'golden visa',
+    'الإقامة الذهبية':                   'golden visa',
+    'فيزا ذهبية':                        'golden visa',
     'التقدم للحصول على الإقامة الذهبية': 'golden visa eligibility investors entrepreneurs',
-    'إقامة': 'residency', 'جواز سفر': 'passport', 'شهادة ميلاد': 'birth certificate',
-    'التأمين الصحي إلزامي': 'health insurance mandatory DHA employer',
-    'التأمين الصحي': 'health insurance DHA', 'تأمين صحي': 'health insurance',
-    'تأمين': 'insurance', 'صحي': 'health', 'إلزامي': 'mandatory required',
-    'لياقة طبية': 'medical fitness', 'فحص طبي': 'medical fitness',
-    'شهادة لياقة': 'medical fitness certificate',
-    'مدرسة': 'school', 'تعليم': 'education',
-    'تسجيل مدرسي': 'school enrollment', 'التسجيل في المدرسة': 'school enrollment KHDA',
-    'عقد الإيجار': 'tenancy contract', 'عقد إيجار': 'tenancy contract',
-    'إيجار': 'tenancy rental', 'إيجاري': 'Ejari', 'توثيق': 'Tawtheeq',
-    'تسجيل عقد الإيجار': 'tenancy contract registration Ejari',
-    'ترخيص تجاري': 'trade license', 'رخصة تجارية': 'trade license',
-    'ضريبة القيمة المضافة': 'VAT Federal Tax Authority', 'ضريبة': 'VAT tax',
-    'عمل حر': 'freelance permit', 'فريلانس': 'freelance',
-    'دعم اجتماعي': 'social support', 'زكاة': 'Zakat', 'معاش': 'pension gratuity',
-    'مكافأة نهاية الخدمة': 'end of service gratuity', 'نهاية الخدمة': 'end of service gratuity',
-    'ذوي الهمم': 'people of determination disability',
-    'كهرباء': 'electricity DEWA ADDC', 'ماء': 'water utility',
-    'حجز موعد': 'book appointment', 'موعد': 'appointment',
-    'الإمارات': 'UAE emirates', 'أبوظبي': 'Abu Dhabi', 'دبي': 'Dubai',
-    'الشارقة': 'Sharjah', 'عجمان': 'Ajman', 'رأس الخيمة': 'Ras Al Khaimah',
-    'الفجيرة': 'Fujairah', 'أم القيوين': 'Umm Al Quwain',
-    'كيف': '', 'ما هي': '', 'ما هو': '', 'هل': '', 'من': '', 'متى': '',
-    'أين': '', 'في': '', 'على': '', 'من يحق له': '', 'يحق له': '',
-    'للحصول على': '', 'التقدم': '', 'أسجل': 'registration', 'أجدد': 'renewal',
-    'أحصل': '', 'يمكنني': '', 'أريد': '',
+    'إقامة':                             'residency',
+    'جواز سفر':                          'passport',
+    'شهادة ميلاد':                       'birth certificate',
+    'التأمين الصحي إلزامي':              'health insurance mandatory DHA employer',
+    'التأمين الصحي':                     'health insurance DHA',
+    'تأمين صحي':                         'health insurance',
+    'تأمين':                             'insurance',
+    'صحي':                               'health',
+    'إلزامي':                            'mandatory required',
+    'لياقة طبية':                        'medical fitness',
+    'فحص طبي':                           'medical fitness',
+    'شهادة لياقة':                       'medical fitness certificate',
+    'مدرسة':                             'school',
+    'تعليم':                             'education',
+    'تسجيل مدرسي':                       'school enrollment',
+    'التسجيل في المدرسة':                'school enrollment KHDA',
+    'عقد الإيجار':                       'tenancy contract',
+    'عقد إيجار':                         'tenancy contract',
+    'إيجار':                             'tenancy rental',
+    'إيجاري':                            'Ejari',
+    'توثيق':                             'Tawtheeq',
+    'تسجيل عقد الإيجار':                 'tenancy contract registration Ejari',
+    'ترخيص تجاري':                       'trade license',
+    'رخصة تجارية':                       'trade license',
+    'ضريبة القيمة المضافة':              'VAT Federal Tax Authority',
+    'ضريبة':                             'VAT tax',
+    'عمل حر':                            'freelance permit',
+    'فريلانس':                           'freelance',
+    'دعم اجتماعي':                       'social support',
+    'زكاة':                              'Zakat',
+    'معاش':                              'pension gratuity',
+    'مكافأة نهاية الخدمة':               'end of service gratuity',
+    'نهاية الخدمة':                      'end of service gratuity',
+    'ذوي الهمم':                         'people of determination disability',
+    'كهرباء':                            'electricity DEWA ADDC',
+    'ماء':                               'water utility',
+    'حجز موعد':                          'book appointment',
+    'موعد':                              'appointment',
+    'الإمارات':                          'UAE emirates',
+    'أبوظبي':                            'Abu Dhabi',
+    'دبي':                               'Dubai',
+    'الشارقة':                           'Sharjah',
+    'عجمان':                             'Ajman',
+    'رأس الخيمة':                        'Ras Al Khaimah',
+    'الفجيرة':                           'Fujairah',
+    'أم القيوين':                        'Umm Al Quwain',
+    'كيف':                               '',
+    'ما هي':                             '',
+    'ما هو':                             '',
+    'هل':                                '',
+    'من':                                '',
+    'متى':                               '',
+    'أين':                               '',
+    'في':                                '',
+    'على':                               '',
+    'من يحق له':                         '',
+    'يحق له':                            '',
+    'للحصول على':                        '',
+    'التقدم':                            '',
+    'أسجل':                              'registration',
+    'أجدد':                              'renewal',
+    'أحصل':                              '',
+    'يمكنني':                            '',
+    'أريد':                              '',
   };
 
   let translated = text;
@@ -221,10 +322,11 @@ function translateArabicQuery(text) {
     translated = translated.replace(new RegExp(arabic, 'g'), english);
   }
   return translated
-    .replace(/[\u0600-\u06FF]+/g, '').replace(/[؟،]/g, '')
-    .replace(/\s+/g, ' ').trim();
+    .replace(/[\u0600-\u06FF]+/g, '')
+    .replace(/[؟،]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
 }
-
 
 // ─────────────────────────────────────────
 // GUARDRAILS (English + Arabic)
@@ -238,49 +340,48 @@ function checkGuardrails(message) {
     'pretend you are', 'forget your instructions', 'jailbreak', 'dan mode',
     'developer mode', 'system prompt', 'override', 'bypass'
   ];
+
   const arabicBanned = [
     'تجاهل التعليمات', 'تجاهل جميع التعليمات', 'أنت الآن', 'تظاهر بأنك',
     'انسَ تعليماتك', 'تجاوز', 'بدون قيود', 'بلا قيود', 'وضع المطور',
     'الموجه النظامي', 'تجاوز إعداداتك', 'تجاوز القيود', 'تصرف كمساعد مختلف'
   ];
+
   const offTopic = [
     'weather', 'recipe', 'sports', 'movie', 'music', 'joke', 'game',
     'dating', 'stock', 'crypto', 'bitcoin', 'football', 'cricket',
     'basketball', 'tennis', 'match'
   ];
+
   const arabicOffTopic = [
     'الطقس', 'وصفة', 'رياضة', 'كرة القدم', 'كرة السلة', 'مباراة',
-    'فيلم', 'موسيقى', 'نكتة', 'العملات المشفرة', 'بيتكوين',
-    'مواعدة', 'الأسهم', 'البورصة'
+    'فيلم', 'موسيقى', 'نكتة', 'العملات المشفرة', 'بيتكوين', 'مواعدة',
+    'الأسهم', 'البورصة'
   ];
 
-  for (const p of banned) {
-    if (lower.includes(p)) return {
-      blocked: true, reason: 'prompt_injection',
-      message: 'I can only assist with UAE government services. I cannot follow instructions that attempt to change my behaviour.'
-    };
+  for (const phrase of banned) {
+    if (lower.includes(phrase)) {
+      return { blocked: true, reason: 'prompt_injection', message: 'I can only assist with UAE government services. I cannot follow instructions that attempt to change my behaviour.' };
+    }
   }
-  for (const p of arabicBanned) {
-    if (message.includes(p)) return {
-      blocked: true, reason: 'prompt_injection',
-      message: 'يمكنني فقط المساعدة في خدمات حكومة الإمارات. لا يمكنني اتباع تعليمات تحاول تغيير سلوكي.'
-    };
+  for (const phrase of arabicBanned) {
+    if (message.includes(phrase)) {
+      return { blocked: true, reason: 'prompt_injection', message: 'يمكنني فقط المساعدة في خدمات حكومة الإمارات. لا يمكنني اتباع تعليمات تحاول تغيير سلوكي.' };
+    }
   }
-  for (const t of offTopic) {
-    if (lower.includes(t)) return {
-      blocked: true, reason: 'off_topic',
-      message: `I'm GovMurshid, specialising in UAE government services across all seven emirates. I can help with licenses, fines, appointments, visas, housing, healthcare, education, business, and social services.`
-    };
+  for (const topic of offTopic) {
+    if (lower.includes(topic)) {
+      return { blocked: true, reason: 'off_topic', message: `I'm GovMurshid, specialising in UAE government services across all seven emirates. I can help with licenses, fines, appointments, visas, housing, healthcare, education, business, and social services.` };
+    }
   }
-  for (const t of arabicOffTopic) {
-    if (message.includes(t)) return {
-      blocked: true, reason: 'off_topic',
-      message: `أنا GovMurshid، متخصص في خدمات حكومة الإمارات عبر جميع الإمارات السبع. يمكنني المساعدة في الرخص والغرامات والمواعيد والتأشيرات والإسكان والرعاية الصحية والتعليم والأعمال والخدمات الاجتماعية.`
-    };
+  for (const topic of arabicOffTopic) {
+    if (message.includes(topic)) {
+      return { blocked: true, reason: 'off_topic', message: `أنا GovMurshid، متخصص في خدمات حكومة الإمارات عبر جميع الإمارات السبع. يمكنني المساعدة في الرخص والغرامات والمواعيد والتأشيرات والإسكان والرعاية الصحية والتعليم والأعمال والخدمات الاجتماعية.` };
+    }
   }
+
   return { blocked: false };
 }
-
 
 // ─────────────────────────────────────────
 // LLM — GROQ API
@@ -289,14 +390,13 @@ function checkGuardrails(message) {
 const Groq = require('groq-sdk');
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
-async function callOllama(systemPrompt, userMessage, history = [], retries = 3) {
+async function callOllama(systemPrompt, userMessage, retries = 3) {
   for (let attempt = 1; attempt <= retries; attempt++) {
     try {
       const completion = await groq.chat.completions.create({
         model: 'llama-3.1-8b-instant',
         messages: [
           { role: 'system', content: systemPrompt },
-          ...history,
           { role: 'user', content: userMessage }
         ],
         temperature: 0.3,
@@ -307,7 +407,7 @@ async function callOllama(systemPrompt, userMessage, history = [], retries = 3) 
       const isRateLimit = err.status === 429 || err.message?.includes('429');
       if (isRateLimit && attempt < retries) {
         const waitMs = attempt * 6000;
-        console.log(`⏳ Groq rate limit — waiting ${waitMs / 1000}s`);
+        console.log(`⏳ Groq rate limit — waiting ${waitMs / 1000}s (retry ${attempt}/${retries})`);
         await new Promise(r => setTimeout(r, waitMs));
         continue;
       }
@@ -316,9 +416,8 @@ async function callOllama(systemPrompt, userMessage, history = [], retries = 3) 
   }
 }
 
-
 // ─────────────────────────────────────────
-// TOOL DETECTION
+// GROQ NATIVE TOOL CALLING
 // ─────────────────────────────────────────
 
 const TOOL_DEFINITIONS = [
@@ -326,11 +425,11 @@ const TOOL_DEFINITIONS = [
     type: 'function',
     function: {
       name: 'checkFineStatus',
-      description: 'Check traffic fines for a vehicle plate number.',
+      description: 'Check outstanding traffic or government fines for a vehicle using its plate number. Use when the user asks about fines, penalties, or unpaid amounts for a specific vehicle plate.',
       parameters: {
         type: 'object',
         properties: {
-          plateNumber: { type: 'string', description: 'e.g. AD-1234 or DXB-5678' }
+          plateNumber: { type: 'string', description: 'The vehicle plate number, e.g. AD-1234 or DXB-5678' }
         },
         required: ['plateNumber']
       }
@@ -340,35 +439,22 @@ const TOOL_DEFINITIONS = [
     type: 'function',
     function: {
       name: 'bookAppointment',
-      description: 'Book a government appointment when user gives both a service and a date.',
+      description: 'Book a government service appointment. Use when the user wants to schedule an appointment for a specific service and date.',
       parameters: {
         type: 'object',
         properties: {
           service: {
             type: 'string',
+            description: 'The service to book.',
             enum: ['driving-license', 'vehicle-registration', 'emirates-id', 'residency-visa', 'health-card']
           },
-          date: { type: 'string', description: 'YYYY-MM-DD' }
+          date: { type: 'string', description: 'Appointment date in YYYY-MM-DD format' }
         },
         required: ['service', 'date']
       }
     }
   }
 ];
-
-// Fast regex pre-check — avoids a Groq API call for most messages.
-// Returns: 'fine_check' | 'appointment' | null
-function fastToolPreCheck(message) {
-  const hasPlate = PLATE_PATTERN.test(message);
-  const hasFineWord = /\bfine|fines|penalty|penalties|unpaid|مخالف|غرامة\b/i.test(message);
-  if (hasPlate && hasFineWord) return 'fine_check';
-
-  const hasBookWord = /\bbook|schedule|appointment\b/i.test(message.toLowerCase());
-  const hasDate = /\d{4}-\d{2}-\d{2}/.test(message);
-  if (hasBookWord && hasDate) return 'appointment';
-
-  return null;
-}
 
 async function detectToolIntentWithLLM(message, retries = 3) {
   for (let attempt = 1; attempt <= retries; attempt++) {
@@ -378,31 +464,31 @@ async function detectToolIntentWithLLM(message, retries = 3) {
         messages: [
           {
             role: 'system',
-            content: `You are a strict tool router with exactly two tools.
-Use checkFineStatus ONLY when message contains a vehicle plate (like AD-1234) AND asks about fines.
-Use bookAppointment ONLY when message asks to book AND has both a service name AND a date (YYYY-MM-DD).
-For ALL other messages return NO tool call.`
+            content: 'You are a UAE government services assistant. Decide if the user needs a tool: checkFineStatus for vehicle fines, bookAppointment for scheduling. If neither applies, do not call any tool.'
           },
           { role: 'user', content: message }
         ],
         tools: TOOL_DEFINITIONS,
         tool_choice: 'auto',
         temperature: 0,
-        max_tokens: 128
+        max_tokens: 256
       });
 
       const responseMessage = completion.choices[0].message;
       if (responseMessage.tool_calls && responseMessage.tool_calls.length > 0) {
         const toolCall = responseMessage.tool_calls[0];
+        const toolName = toolCall.function.name;
         const toolParams = JSON.parse(toolCall.function.arguments);
-        console.log(`🔧 Tool: ${toolCall.function.name}`, toolParams);
-        return { tool: toolCall.function.name, params: toolParams };
+        console.log(`🔧 LLM selected tool: ${toolName}`, toolParams);
+        return { tool: toolName, params: toolParams };
       }
       return null;
     } catch (err) {
       const isRateLimit = err.status === 429 || err.message?.includes('429');
       if (isRateLimit && attempt < retries) {
-        await new Promise(r => setTimeout(r, attempt * 6000));
+        const waitMs = attempt * 6000;
+        console.log(`⏳ Groq rate limit (tool call) — waiting ${waitMs / 1000}s (retry ${attempt}/${retries})`);
+        await new Promise(r => setTimeout(r, waitMs));
         continue;
       }
       console.error('⚠️ Tool detection failed:', err.message);
@@ -411,21 +497,17 @@ For ALL other messages return NO tool call.`
   }
 }
 
-
 // ─────────────────────────────────────────
-// SYSTEM PROMPT
+// SYSTEM PROMPTS
 // ─────────────────────────────────────────
 
 const ACTIVE_SYSTEM_PROMPT = `You are GovMurshid, an AI guide for UAE government services across all seven emirates — Abu Dhabi, Dubai, Sharjah, Ajman, Umm Al Quwain, Ras Al Khaimah, and Fujairah.
-
-Answer ONLY using the policy information provided in POLICY CONTEXT below.
-Do NOT add any information not in the context.
-
-CRITICAL RULE: If the user asks about a specific emirate, use ONLY the policy for that emirate from the context. If a specific emirate policy exists in the context, use it — do not use a different emirate's policy or the All UAE policy as the primary answer.
-
+Answer ONLY using the policy information provided below.
+Do NOT add information that is not in the context.
+When an emirate is specified, focus your answer on that emirate's policies specifically.
+Always mention which emirate a rule applies to if it differs across emirates.
 Be concise, helpful, and professional.
-If the answer is not in the context, say so and suggest the user visit the relevant emirate portal.`;
-
+If the answer is not in the context, say so clearly and suggest the user visit the relevant emirate portal.`;
 
 // ─────────────────────────────────────────
 // ROUTES
@@ -433,35 +515,44 @@ If the answer is not in the context, say so and suggest the user visit the relev
 
 app.get('/api/health', (req, res) => {
   res.json({
-    status: 'ok', version: '3.3.0', model: 'groq/llama-3.1-8b-instant',
-    name: 'GovMurshid', toolCalling: 'native', memory: 'multi-turn',
-    policies: policies.length
+    status: 'ok',
+    version: '3.3.0',
+    model: 'groq/llama-3.1-8b-instant',
+    name: 'GovMurshid',
+    toolCalling: 'native',
+    memory: 'session-based',
   });
 });
 
 app.get('/api/policies/search', (req, res) => {
   const { q } = req.query;
   if (!q) return res.status(400).json({ error: 'Missing query parameter q' });
-  res.json({ query: q, results: retrieveRelevantDocs(q) });
+  const docs = retrieveRelevantDocs(q);
+  res.json({ query: q, results: docs });
 });
 
 app.get('/api/tools/fines/:plateNumber', (req, res) => {
-  res.json(checkFineStatus(req.params.plateNumber));
+  const result = checkFineStatus(req.params.plateNumber);
+  res.json(result);
 });
 
 app.post('/api/tools/appointment', (req, res) => {
   const { service, date } = req.body;
   if (!service || !date) return res.status(400).json({ error: 'Missing service or date' });
-  res.json(bookAppointment(service, date));
+  const result = bookAppointment(service, date);
+  res.json(result);
 });
 
-app.post('/api/session/clear', (req, res) => {
-  const { sessionId } = req.body;
-  if (sessionId) clearSession(sessionId);
+// Clear session endpoint (for testing)
+app.delete('/api/session/:sessionId', (req, res) => {
+  sessions.delete(req.params.sessionId);
   res.json({ cleared: true });
 });
 
-// Main chat endpoint
+// ─────────────────────────────────────────
+// MAIN CHAT ENDPOINT
+// ─────────────────────────────────────────
+
 app.post('/api/chat', async (req, res) => {
   const { message, sessionId } = req.body;
 
@@ -469,54 +560,46 @@ app.post('/api/chat', async (req, res) => {
     return res.status(400).json({ error: 'Missing or invalid message' });
   }
 
-  const sid = sessionId || 'default';
-  const session = getSession(sid);
-
-  // 1. Guardrails
+  // ── 1. Guardrails ──────────────────────────────────────────────────
   const guard = checkGuardrails(message);
   if (guard.blocked) {
     return res.json({
       reply: guard.message,
       guardrail: { triggered: true, reason: guard.reason },
-      retrievedDocs: [], toolUsed: null,
-      topicChanged: false
+      retrievedDocs: [],
+      toolUsed: null
     });
   }
 
-  // 2. Language detection
+  // ── 2. Language detection ──────────────────────────────────────────
   const isArabic = detectArabic(message);
 
-  // 3. Topic change detection — stored separately from history so it
-  //    survives history trimming after SESSION_MAX_TURNS
-  const incomingTopic = detectTopicGroup(message);
-  if (incomingTopic !== null && session.currentTopic !== null && incomingTopic !== session.currentTopic) {
-    console.log(`🔄 Topic change: ${session.currentTopic} → ${incomingTopic} — clearing history`);
-    session.history = [];
-    session.currentTopic = incomingTopic;
-    session.topicChanged = true;
-  } else if (incomingTopic !== null) {
-    session.currentTopic = incomingTopic;
-    session.topicChanged = false;
-  } else {
-    session.topicChanged = false;
+  // ── 3. Session + memory ────────────────────────────────────────────
+  const sid = sessionId || 'default';
+  const session = getSession(sid);
+
+  // Detect topic and emirate from the incoming message
+  const incomingTopic   = detectTopicGroup(message);
+  const incomingEmirate = detectEmirate(message);
+
+  // Detect topic change
+  const topicChanged = incomingTopic && session.currentTopic && incomingTopic !== session.currentTopic;
+
+  // Update session state
+  if (incomingTopic)   session.currentTopic   = incomingTopic;
+  if (incomingEmirate) session.currentEmirate = incomingEmirate;
+  session.topicChanged = topicChanged;
+
+  // ── 4. Follow-up enrichment ────────────────────────────────────────
+  // If message is a short follow-up (e.g. "how about sharjah?"),
+  // rebuild the retrieval query from session memory.
+  let retrievalMessage = message;
+  if (isFollowUp(message) && (session.currentTopic || session.currentEmirate)) {
+    retrievalMessage = enrichFollowUp(message, session);
   }
 
-  console.log(`💬 Session ${sid} | topic: ${session.currentTopic} | history: ${session.history.length}`);
-
-  // 4. Tool detection — fast pre-check first, Groq only for appointments
-  let toolIntent = null;
-  const preCheck = fastToolPreCheck(message);
-
-  if (preCheck === 'fine_check') {
-    const plateMatch = message.match(PLATE_PATTERN);
-    if (plateMatch) {
-      toolIntent = { tool: 'checkFineStatus', params: { plateNumber: plateMatch[0].toUpperCase() } };
-      console.log(`⚡ Fast check: checkFineStatus ${plateMatch[0]}`);
-    }
-  } else if (preCheck === 'appointment') {
-    toolIntent = await detectToolIntentWithLLM(message);
-  }
-  // preCheck === null → skip tool detection → straight to RAG
+  // ── 5. Tool intent detection ───────────────────────────────────────
+  const toolIntent = await detectToolIntentWithLLM(message);
 
   if (toolIntent) {
     let toolResult;
@@ -538,8 +621,9 @@ app.post('/api/chat', async (req, res) => {
         : `عذراً، ${toolResult.message}`;
     }
 
-    addToHistory(sid, 'user', message);
-    addToHistory(sid, 'assistant', toolReply);
+    // Save to history
+    addToHistory(session, 'user', message);
+    addToHistory(session, 'assistant', toolReply);
 
     return res.json({
       reply: toolReply,
@@ -547,72 +631,16 @@ app.post('/api/chat', async (req, res) => {
       retrievedDocs: [],
       toolUsed: { name: toolIntent.tool, params: toolIntent.params, result: toolResult },
       language: isArabic ? 'ar' : 'en',
-      sessionId: sid,
-      sessionTurns: session.history.length,
-      topicChanged: session.topicChanged
+      memory: { turns: Math.floor(session.history.length / 2), topic: session.currentTopic, emirate: session.currentEmirate }
     });
   }
 
-  /*
-  // 5. RAG query building
-  let retrievalQuery = isArabic ? translateArabicQuery(message) : message;
+  // ── 6. RAG retrieval ───────────────────────────────────────────────
+  const retrievalQuery = isArabic
+    ? translateArabicQuery(retrievalMessage)
+    : retrievalMessage;
 
-  if (isShortFollowUp(message) && session.history.length >= 2) {
-    // Find first user message in history with a topic keyword
-    const topicMsg = session.history.filter(h => h.role === 'user')
-      .find(m => detectTopicGroup(m.content) !== null);
-    if (topicMsg) {
-      retrievalQuery = `${topicMsg.content} ${message}`;
-      console.log(`📎 Enriched: "${retrievalQuery.slice(0, 80)}..."`);
-    } else if (session.currentTopic) {
-      // All history is follow-ups — use stored topic group keywords
-      const topicKeywords = TOPIC_GROUPS[session.currentTopic].join(' ');
-      retrievalQuery = `${topicKeywords} ${message}`;
-      console.log(`📎 Topic-enriched (${session.currentTopic}): "${retrievalQuery.slice(0, 80)}..."`);
-    }
-  }
-    */
-
-  // 5. RAG query building
-  let retrievalQuery = isArabic ? translateArabicQuery(message) : message;
-
-  // If current topic is driving and user asks "what about [emirate]?"
-  // without a plate number — prompt for plate instead of going to RAG
-  if (isShortFollowUp(message) && session.currentTopic === 'driving' &&
-    EMIRATES.some(e => message.toLowerCase().includes(e)) &&
-    !PLATE_PATTERN.test(message)) {
-    const emirateName = EMIRATES.find(e => message.toLowerCase().includes(e));
-    const formattedName = emirateName.replace(/\b\w/g, c => c.toUpperCase());
-    const promptReply = `To check fines for a vehicle in ${formattedName}, please provide the plate number. For example: "Check fines for plate DXB-5678"`;
-    addToHistory(sid, 'user', message);
-    addToHistory(sid, 'assistant', promptReply);
-    return res.json({
-      reply: promptReply,
-      guardrail: { triggered: false },
-      retrievedDocs: [], toolUsed: null,
-      language: isArabic ? 'ar' : 'en',
-      sessionId: sid,
-      sessionTurns: session.history.length,
-      topicChanged: false
-    });
-  }
-
-  if (isShortFollowUp(message) && session.history.length >= 2) {
-    // Find first user message in history with a topic keyword
-    const topicMsg = session.history.filter(h => h.role === 'user')
-      .find(m => detectTopicGroup(m.content) !== null);
-    if (topicMsg) {
-      retrievalQuery = `${topicMsg.content} ${message}`;
-      console.log(`📎 Enriched: "${retrievalQuery.slice(0, 80)}..."`);
-    } else if (session.currentTopic) {
-      // All history is follow-ups — use stored topic group keywords
-      const topicKeywords = TOPIC_GROUPS[session.currentTopic].join(' ');
-      retrievalQuery = `${topicKeywords} ${message}`;
-      console.log(`📎 Topic-enriched (${session.currentTopic}): "${retrievalQuery.slice(0, 80)}..."`);
-    }
-  }
-
-  const docs = retrieveRelevantDocs(retrievalQuery);
+  const docs = retrieveRelevantDocs(retrievalQuery, 5);
 
   if (docs.length === 0) {
     const noResultReply = isArabic
@@ -621,38 +649,49 @@ app.post('/api/chat', async (req, res) => {
     return res.json({
       reply: noResultReply,
       guardrail: { triggered: false },
-      retrievedDocs: [], toolUsed: null,
-      language: isArabic ? 'ar' : 'en',
-      sessionId: sid,
-      sessionTurns: session.history.length,
-      topicChanged: session.topicChanged
+      retrievedDocs: [],
+      toolUsed: null,
+      language: isArabic ? 'ar' : 'en'
     });
   }
 
-  // 6. Build prompt + call LLM with history
-  const context = docs.map(d => `[${d.id}] ${d.title} (${d.emirate}):\n${d.content}`).join('\n\n');
+  // ── 7. Build prompt with memory context ───────────────────────────
+  const context = docs.map(d => `[${d.id}] ${d.title} (${d.emirate || 'UAE'}):\n${d.content}`).join('\n\n');
 
   const languageInstruction = isArabic
     ? `\nالمستخدم يكتب بالعربية. يجب أن تجيب باللغة العربية الفصحى الحديثة بالكامل. احتفظ بمعرّفات السياسات مثل POL-001 باللغة الإنجليزية.`
     : `\nRespond in English.`;
 
-  const systemPrompt = `${ACTIVE_SYSTEM_PROMPT}${languageInstruction}\n\nPOLICY CONTEXT:\n${context}`;
+  // Inject conversation history into system prompt
+  let historyContext = '';
+  if (session.history.length > 0) {
+    const recentHistory = session.history.slice(-6); // last 3 turns
+    historyContext = '\n\nCONVERSATION HISTORY:\n' +
+      recentHistory.map(h => `${h.role === 'user' ? 'User' : 'Assistant'}: ${h.content}`).join('\n');
+  }
 
+  const systemPrompt = `${ACTIVE_SYSTEM_PROMPT}${languageInstruction}${historyContext}\n\nPOLICY CONTEXT:\n${context}`;
+
+  // ── 8. LLM call ───────────────────────────────────────────────────
   try {
-    const llmReply = await callOllama(systemPrompt, message, session.history);
+    const llmReply = await callOllama(systemPrompt, message);
 
-    addToHistory(sid, 'user', message);
-    addToHistory(sid, 'assistant', llmReply);
+    // Save to history
+    addToHistory(session, 'user', message);
+    addToHistory(session, 'assistant', llmReply);
 
-    return res.json({
+    res.json({
       reply: llmReply,
       guardrail: { triggered: false },
-      retrievedDocs: docs.map(d => ({ id: d.id, title: d.title, score: d.score })),
+      retrievedDocs: docs.map(d => ({ id: d.id, title: d.title, score: d.score, emirate: d.emirate })),
       toolUsed: null,
       language: isArabic ? 'ar' : 'en',
-      sessionId: sid,
-      sessionTurns: session.history.length,
-      topicChanged: session.topicChanged
+      memory: {
+        turns: Math.floor(session.history.length / 2),
+        topic: session.currentTopic,
+        emirate: session.currentEmirate,
+        topicChanged,
+      }
     });
   } catch (err) {
     console.error('LLM error:', err.message);
@@ -660,18 +699,17 @@ app.post('/api/chat', async (req, res) => {
   }
 });
 
-
 // ─────────────────────────────────────────
 // START
 // ─────────────────────────────────────────
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`GovMurshid server running at http://localhost:${PORT}`);
-  console.log(`Health check: http://localhost:${PORT}/api/health`);
+  console.log(`GovMurshid v3.3.0 running at http://localhost:${PORT}`);
   console.log(`LLM: Groq API (llama-3.1-8b-instant)`);
-  console.log(`Tool calling: fast pre-check + Groq native ✅`);
-  console.log(`Memory: multi-turn + topic change detection ✅`);
-  console.log(`Policies: ${policies.length} across all 7 emirates ✅`);
+  console.log(`Tool calling: Groq native function calling ✅`);
+  console.log(`Multi-turn memory: session-based (${SESSION_MAX_TURNS} turns, 30min TTL) ✅`);
+  console.log(`Emirate boost scoring: enabled ✅`);
   console.log(`Arabic support: enabled ✅`);
 });
 
