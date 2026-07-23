@@ -21,26 +21,78 @@
       min-height: 100vh;
     }
 
+    /* ── UAE FLAG STRIPE ── */
+    .uae-stripe {
+      width: 100%;
+      height: 6px;
+      display: flex;
+    }
+
+    .uae-stripe .red {
+      background: #EF3340;
+      flex: 1;
+    }
+
+    .uae-stripe .green {
+      background: #009A44;
+      flex: 2;
+    }
+
+    .uae-stripe .white {
+      background: #ffffff;
+      flex: 2;
+      border-bottom: 1px solid #ddd;
+    }
+
+    .uae-stripe .black {
+      background: #000000;
+      flex: 2;
+    }
+
+    /* ── HEADER ── */
     header {
       width: 100%;
       background: #006241;
       color: white;
-      padding: 16px 24px;
+      padding: 14px 24px;
       display: flex;
       align-items: center;
-      gap: 12px;
+      justify-content: space-between;
     }
 
-    header h1 {
+    .header-left h1 {
       font-size: 1.25rem;
       font-weight: 600;
     }
 
-    header p {
-      font-size: 0.8rem;
+    .header-left p {
+      font-size: 0.78rem;
       opacity: 0.85;
+      margin-top: 2px;
     }
 
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    #new-chat-btn {
+      background: transparent;
+      border: 1px solid rgba(255, 255, 255, 0.5);
+      color: white;
+      border-radius: 8px;
+      padding: 6px 14px;
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    #new-chat-btn:hover {
+      background: rgba(255, 255, 255, 0.15);
+    }
+
+    /* ── CHAT CONTAINER ── */
     #chat-container {
       width: 100%;
       max-width: 760px;
@@ -116,12 +168,18 @@
       color: #dc2626;
     }
 
+    .tag.memory {
+      background: #f3e8ff;
+      color: #7e22ce;
+    }
+
     .message.error {
       align-self: flex-start;
       background: #fee2e2;
       color: #dc2626;
     }
 
+    /* ── INPUT ── */
     #input-area {
       display: flex;
       gap: 8px;
@@ -162,6 +220,7 @@
       cursor: not-allowed;
     }
 
+    /* ── SUGGESTIONS ── */
     .suggestions {
       display: flex;
       flex-wrap: wrap;
@@ -194,15 +253,48 @@
       font-style: italic;
       box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     }
+
+    /* ── FOOTER ── */
+    footer {
+      width: 100%;
+      text-align: center;
+      padding: 14px 16px;
+      font-size: 0.75rem;
+      color: #555;
+      border-top: 1px solid #e0e0e0;
+      background: #f8f9fa;
+      line-height: 1.8;
+    }
+
+
+    footer strong {
+      color: #006241;
+    }
+
+    footer .proud {
+      color: #c0001a;
+      font-weight: 600;
+    }
   </style>
 </head>
 
 <body>
 
+  <!-- UAE flag stripe -->
+  <div class="uae-stripe">
+    <div class="red"></div>
+    <div class="green"></div>
+    <div class="white"></div>
+    <div class="black"></div>
+  </div>
+
   <header>
-    <div>
+    <div class="header-left">
       <h1>🇦🇪 GovMurshid</h1>
       <p>UAE Government Services Assistant — Powered by AI</p>
+    </div>
+    <div class="header-right">
+      <button id="new-chat-btn" onclick="newConversation()">+ New conversation</button>
     </div>
   </header>
 
@@ -246,10 +338,21 @@
 
   </div>
 
+  <!-- Footer -->
+  <footer>
+    <div>Built by <strong>Fayaz Basha Shaik</strong> &nbsp;|&nbsp; <span class="proud">🇦🇪 Proud of UAE</span>
+      &nbsp;|&nbsp; افخر بالامارات</div>
+    <div>&copy; 2026 GovMurshid — UAE Government Services AI. All rights reserved.</div>
+  </footer>
+
   <script>
     const messagesEl = document.getElementById('messages');
     const inputEl = document.getElementById('user-input');
     const sendBtn = document.getElementById('send-btn');
+
+    // 🆕 Generate a unique session ID for this browser tab
+    let sessionId = 'sess_' + Math.random().toString(36).slice(2) + Date.now();
+    let turnCount = 0; // track turns for memory indicator
 
     function handleKey(e) {
       if (e.key === 'Enter' && !e.shiftKey) {
@@ -272,6 +375,32 @@
       return div;
     }
 
+    // 🆕 New conversation — clear session on server and reset UI
+    async function newConversation() {
+      try {
+        await fetch('/api/session/clear', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sessionId })
+        });
+      } catch (e) { /* silent fail — UI reset is what matters */ }
+
+      // Generate a fresh session ID
+      sessionId = 'sess_' + Math.random().toString(36).slice(2) + Date.now();
+      turnCount = 0;
+
+      // Clear messages and show welcome again
+      messagesEl.innerHTML = '';
+      appendMessage('assistant',
+        '👋 Hello! I\'m <strong>GovMurshid</strong>, your UAE government services assistant.<br /><br />' +
+        'I can help residents across all 7 emirates with driving licenses, vehicle registration, traffic fines, health ' +
+        'insurance, education, housing, business licenses, social support, and more.<br /><br />' +
+        'How can I help you today?'
+      );
+
+      inputEl.focus();
+    }
+
     async function sendMessage() {
       const text = inputEl.value.trim();
       if (!text) return;
@@ -287,13 +416,18 @@
         const res = await fetch('/api/chat', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ message: text })
+          // 🆕 send sessionId with every message
+          body: JSON.stringify({ message: text, sessionId })
         });
 
         const data = await res.json();
         typing.remove();
+        
+        turnCount++;
+        // Reset display counter if server cleared history (topic change)
+        if (data.topicChanged) turnCount = 1;
 
-        // Build response HTML
+
         let html = escapeHtml(data.reply).replace(/\n/g, '<br/>');
         let meta = '';
 
@@ -304,6 +438,11 @@
         } else if (data.retrievedDocs?.length > 0) {
           const docList = data.retrievedDocs.map(d => d.id).join(', ');
           meta += `<span class="tag rag">📄 RAG: ${docList}</span>`;
+        }
+
+        // 🆕 Show memory indicator after turn 2+
+        if (turnCount >= 2 && !data.guardrail?.triggered) {
+          meta += `<span class="tag memory">🧠 Memory: ${turnCount} turns</span>`;
         }
 
         if (meta) html += `<div class="meta">${meta}</div>`;

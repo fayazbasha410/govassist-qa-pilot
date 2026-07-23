@@ -220,5 +220,42 @@
       }
     },
     "timestamp": "2026-07-14T11:53:17.960Z"
+  },
+  {
+    "type": "prod_eval",
+    "total": 13,
+    "passed": 13,
+    "passRate": 1,
+    "categoryScores": {
+      "driving": {
+        "pass": 2,
+        "total": 2
+      },
+      "identity": {
+        "pass": 5,
+        "total": 5
+      },
+      "utilities": {
+        "pass": 1,
+        "total": 1
+      },
+      "housing": {
+        "pass": 2,
+        "total": 2
+      },
+      "business": {
+        "pass": 1,
+        "total": 1
+      },
+      "education": {
+        "pass": 1,
+        "total": 1
+      },
+      "healthcare": {
+        "pass": 1,
+        "total": 1
+      }
+    },
+    "timestamp": "2026-07-22T13:33:16.264Z"
   }
 ]
