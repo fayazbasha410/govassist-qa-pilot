@@ -516,7 +516,7 @@ If the answer is not in the context, say so clearly and suggest the user visit t
 app.get('/api/health', (req, res) => {
   res.json({
     status: 'ok',
-    version: '3.3.0',
+    version: '3.3.1',
     model: 'groq/llama-3.1-8b-instant',
     name: 'GovMurshid',
     toolCalling: 'native',
@@ -593,13 +593,23 @@ app.post('/api/chat', async (req, res) => {
   // ── 4. Follow-up enrichment ────────────────────────────────────────
   // If message is a short follow-up (e.g. "how about sharjah?"),
   // rebuild the retrieval query from session memory.
+  const followUp = isFollowUp(message) && (session.currentTopic || session.currentEmirate);
   let retrievalMessage = message;
-  if (isFollowUp(message) && (session.currentTopic || session.currentEmirate)) {
+  if (followUp) {
     retrievalMessage = enrichFollowUp(message, session);
   }
 
   // ── 5. Tool intent detection ───────────────────────────────────────
-  const toolIntent = await detectToolIntentWithLLM(message);
+  // Only call Groq tool detection when the message looks like it could
+  // contain a plate number or an explicit booking request.
+  // This prevents emirate follow-ups ("what about ajman?") from
+  // hallucinating tool calls with no plate number.
+  const PLATE_PATTERN = /\b[A-Z]{1,3}[-\s]?\d{1,5}\b/i;
+  const BOOKING_KEYWORDS = ['book', 'appointment', 'schedule', 'reserve', 'slot'];
+  const mightNeedTool = PLATE_PATTERN.test(message) ||
+    BOOKING_KEYWORDS.some(k => message.toLowerCase().includes(k));
+
+  const toolIntent = mightNeedTool ? await detectToolIntentWithLLM(message) : null;
 
   if (toolIntent) {
     let toolResult;
@@ -640,7 +650,10 @@ app.post('/api/chat', async (req, res) => {
     ? translateArabicQuery(retrievalMessage)
     : retrievalMessage;
 
-  const docs = retrieveRelevantDocs(retrievalQuery, 5);
+  // For follow-up messages, use a tighter topK so we don't dump
+  // all policies for that emirate — just the most relevant ones.
+  const topK = followUp ? 2 : 5;
+  const docs = retrieveRelevantDocs(retrievalQuery, topK);
 
   if (docs.length === 0) {
     const noResultReply = isArabic
@@ -662,6 +675,11 @@ app.post('/api/chat', async (req, res) => {
     ? `\nالمستخدم يكتب بالعربية. يجب أن تجيب باللغة العربية الفصحى الحديثة بالكامل. احتفظ بمعرّفات السياسات مثل POL-001 باللغة الإنجليزية.`
     : `\nRespond in English.`;
 
+  // For follow-ups, tell the LLM to stay on the remembered topic only
+  const topicFocusInstruction = followUp && session.currentTopic
+    ? `\nThe user is asking a follow-up question about ${session.currentTopic}${session.currentEmirate ? ` in ${session.currentEmirate}` : ''}. Answer ONLY about ${session.currentTopic} — do not introduce other topics.`
+    : '';
+
   // Inject conversation history into system prompt
   let historyContext = '';
   if (session.history.length > 0) {
@@ -670,7 +688,7 @@ app.post('/api/chat', async (req, res) => {
       recentHistory.map(h => `${h.role === 'user' ? 'User' : 'Assistant'}: ${h.content}`).join('\n');
   }
 
-  const systemPrompt = `${ACTIVE_SYSTEM_PROMPT}${languageInstruction}${historyContext}\n\nPOLICY CONTEXT:\n${context}`;
+  const systemPrompt = `${ACTIVE_SYSTEM_PROMPT}${languageInstruction}${topicFocusInstruction}${historyContext}\n\nPOLICY CONTEXT:\n${context}`;
 
   // ── 8. LLM call ───────────────────────────────────────────────────
   try {
@@ -705,7 +723,7 @@ app.post('/api/chat', async (req, res) => {
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`GovMurshid v3.3.0 running at http://localhost:${PORT}`);
+  console.log(`GovMurshid v3.3.1 running at http://localhost:${PORT}`);
   console.log(`LLM: Groq API (llama-3.1-8b-instant)`);
   console.log(`Tool calling: Groq native function calling ✅`);
   console.log(`Multi-turn memory: session-based (${SESSION_MAX_TURNS} turns, 30min TTL) ✅`);
