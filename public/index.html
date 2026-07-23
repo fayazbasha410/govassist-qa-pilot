@@ -442,7 +442,7 @@
 
         // 🆕 Show memory indicator after turn 2+
         if (turnCount >= 2 && !data.guardrail?.triggered) {
-          meta += `<span class="tag memory">🧠 Memory: ${turnCount} turns</span>`;
+          meta += `<span class="tag memory">🧠 Memory: ${data.memory?.turns ?? turnCount} turns</span>`;
         }
 
         if (meta) html += `<div class="meta">${meta}</div>`;
