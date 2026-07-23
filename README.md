@@ -1,147 +1,132 @@
-# 🇦🇪 GovMurshid — UAE Government Services AI Assistant
+# GovMurshid — UAE Government Services AI Assistant
 
-GovMurshid is a UAE government services AI assistant built on a RAG + agentic architecture, covering all 7 emirates. It is wrapped in a full enterprise QA suite including LLM evaluation, adversarial red-teaming, performance testing, accessibility checks, and CI/CD automation.
+GovMurshid is a UAE government services AI assistant covering all 7 emirates. It is built on RAG + agentic architecture and wrapped in a full enterprise QA suite.
 
-> **Deployment:** The project currently runs locally. No cloud deployment is required — all components (LLM, server, tests, evals) run on your machine via Ollama. See `SETUP-GUIDE.md` to get started.
+**Live:** https://govmurshid.onrender.com
+**Repo:** https://github.com/fayazbasha410/govassist-qa-pilot
 
 ---
 
-## 🏗️ What's Inside
+## What it does
 
-### The Application
-- **RAG layer** — answers policy questions grounded in 35 UAE government policy documents
-- **Agentic layer** — executes tool calls (`checkFineStatus`, `bookAppointment`) via mock APIs
-- **Guardrails** — blocks prompt injection, jailbreaks, and off-topic requests
-- **Chat UI** — full web interface at `http://localhost:3000`
+- Answers UAE government service questions grounded in 55 policy documents
+- Executes tool calls for traffic fine checks and appointment booking
+- Supports English and Arabic — detection, retrieval, and responses
+- Blocks prompt injection, jailbreaks, and off-topic requests
+- Remembers conversation context across multiple turns per session
 
-### UAE Coverage
-All 7 emirates — Abu Dhabi, Dubai, Sharjah, Ajman, Umm Al Quwain, Ras Al Khaimah, Fujairah.
+### Emirates covered
 
-Service categories: Driving & Vehicles, Identity & Residency, Education, Healthcare, Housing, Business, Social Services, Utilities.
+Abu Dhabi, Dubai, Sharjah, Ajman, Umm Al Quwain, Ras Al Khaimah, Fujairah
 
-### The QA Suite
+### Service categories
+
+Driving, Identity and Residency, Education, Healthcare, Housing, Business, Social Services, Utilities
+
+---
+
+## QA Suite
 
 | Layer | Tool | Result |
 |---|---|---|
-| UI automation | Playwright + enterprise POM | 66 tests ✅ |
-| API + schema validation | Playwright request + schema checks | 43 API tests ✅ |
-| RAG / LLM evaluation | Promptfoo + LLM-as-judge | 15/15 golden dataset ✅ |
-| Regression gating | Promptfoo + noise band gate | Proven detection ✅ |
-| Adversarial red team | Custom attack suite | 20/20 attacks handled ✅ |
-| Performance | k6 load test | p95 health 2ms, chat 7.6s @ 5 VUs ✅ |
-| Accessibility | axe-core + Playwright | 9/9 WCAG 2.1 AA ✅ |
-| CI/CD | GitHub Actions | PR + develop + nightly workflows ✅ |
-| Observability | Prod eval simulator + HTML dashboard | 10/10 prod traffic ✅ |
+| API and UI automation | Playwright + POM | 200 tests |
+| LLM evaluation | Promptfoo + LLM-as-judge | 20 golden cases |
+| Regression gating | Noise band gate | 18/20 within band |
+| Adversarial red team | Custom attack suite | 30/30 handled |
+| Performance | k6 | 4/4 thresholds at 3 VUs |
+| Accessibility | axe-core | WCAG 2.1 AA |
+| CI/CD | GitHub Actions | PR + develop + nightly |
+| Observability | Prod eval + dashboard | 13/13 prod traffic |
 
 ---
 
-## 🚀 Quick Start
+## Quick start
 
 ```bash
-# 1. Install dependencies
 npm install
 npx playwright install --with-deps chromium
+npm install -g promptfoo
+brew install k6
 
-# 2. Start the server (keep this running in Tab 1)
+# Add your Groq API key
+echo "GROQ_API_KEY=your_key_here" > .env
+
 npm start
-
-# 3. Open the app
-open http://localhost:3000
-```
-
-See `SETUP-GUIDE.md` for full installation steps including Ollama, k6, and Promptfoo.
-
----
-
-## 📁 Project Structure
-
-```
-govassist-qa-pilot/
-├── src/
-│   ├── data/policies.js            # 35 UAE government policy documents
-│   ├── tools/agentTools.js         # Mock agent tools (fines, appointments)
-│   └── server.js                   # Express server — RAG + agent + guardrails
-├── public/
-│   └── index.html                  # Chat UI
-├── tests/
-│   ├── pages/                      # Page Object Model
-│   │   ├── BasePage.js
-│   │   ├── ChatPage.js
-│   │   └── components/             # Header, MessageList, InputBar
-│   ├── api/
-│   │   └── GovAssistApiClient.js   # Centralised API client
-│   ├── fixtures/fixtures.js        # Playwright fixtures
-│   ├── helpers/testHelpers.js      # Shared utilities
-│   ├── data/testData.js            # Centralised test data
-│   └── specs/
-│       ├── api/                    # health, policies, fines, appointments, chat
-│       └── ui/                     # chat, accessibility
-├── eval/
-│   ├── golden-dataset/             # Versioned golden dataset (15 cases)
-│   ├── configs/promptfoo.yaml      # Promptfoo RAG eval config
-│   ├── baselines/baseline-v1.json  # Regression baseline
-│   ├── regression-gate.js          # Noise-band regression gate
-│   ├── adversarial/red-team.js     # 20-attack red team suite
-│   ├── prod-simulator/prod-eval.js # Production traffic simulator
-│   └── observability/              # Metrics store + HTML dashboard
-├── tests/performance/
-│   └── load-test.js                # k6 load test
-└── .github/workflows/
-    ├── pr-checks.yml               # Runs on every PR
-    ├── develop-full-suite.yml      # Runs on develop merge
-    └── nightly.yml                 # Nightly scheduled run
+# Open http://localhost:3000
 ```
 
 ---
 
-## 🛠️ npm Scripts
+## Scripts
 
 | Script | What it does |
 |---|---|
-| `npm start` | Start the GovMurshid server on port 3000 |
-| `npx playwright test` | Run all 66 UI and API tests |
-| `npm run eval` | Run Promptfoo RAG eval (15 golden cases) |
-| `npm run eval:regression` | Run regression gate vs baseline |
-| `npm run eval:redteam` | Run 20-attack adversarial suite |
-| `npm run eval:prod` | Run production traffic simulation |
-| `npm run eval:dashboard` | Generate and open observability dashboard |
-| `npm run eval:view` | Open Promptfoo visual report UI |
-| `npm run perf` | Run k6 load test (50 seconds) |
+| `npm start` | Start server on port 3000 |
+| `npx playwright test` | Run all 200 tests |
+| `npm run eval:regression` | Run regression gate |
+| `npm run eval:redteam` | Run 30-attack red team |
+| `npm run eval:prod` | Run production eval |
+| `npm run eval:dashboard` | Generate observability dashboard |
+| `npm run perf` | Run k6 load test |
 
 ---
 
-## 🌐 Deployment Note
-
-GovMurshid is currently designed to run locally. The LLM (llama3.2) runs via Ollama on your machine — no external API keys or cloud costs required.
-
-To deploy to a server or cloud environment, you would:
-1. Replace Ollama with an API-based LLM (Anthropic, OpenAI, Azure OpenAI)
-2. Set the API key as an environment variable and update `callOllama()` in `src/server.js`
-3. Deploy the Node.js server to any cloud platform (Railway, Render, AWS, Azure)
-4. Update `BASE_URL` in tests and eval configs via environment variables
-
----
-
-## 🧠 Key Engineering Decisions
-
-### Keyword + synonym retrieval instead of embeddings
-For a pilot with 35 documents, keyword retrieval with synonym expansion is deterministic, debuggable, and fast. The architecture is designed to swap in a vector DB (Pinecone, pgvector) at the retrieval layer without changing the eval or test layers.
-
-### Promptfoo for LLM evaluation
-Promptfoo is JavaScript-native, supports LLM-as-judge, red-teaming, and regression comparison in a single tool. The eval methodology is tool-agnostic and can be replicated with Ragas or DeepEval.
-
-### Noise-band regression gating
-Per-case gating on 15 tests produces a 54% false-alarm rate (`1 - 0.95^15`). The noise-band approach gates on aggregate pass rate vs baseline within ±20%, keeping false alarms under 2% while catching real regressions.
-
-### Production eval feedback loop
-Offline test suites go stale without real user signal. The prod-eval simulator samples production-like traffic, scores it with the LLM judge, and flags failures as golden dataset candidates — closing the loop between production and CI.
-
----
-
-## 🌿 Branch Structure
+## Project structure
 
 ```
-main        ← stable, production-ready code
-develop     ← integration branch
-feature/*   ← individual phase branches (all merged)
+src/
+  data/policies.js          55 UAE policy documents (EN + AR)
+  tools/agentTools.js       Mock tools: fines and appointments
+  server.js                 Server: RAG, tools, memory, guardrails, Arabic
+
+public/
+  index.html                Chat UI
+
+tests/
+  pages/                    Page Object Model (BasePage, ChatPage, components)
+  api/GovAssistApiClient.js API client with session support
+  data/testData.js          All test inputs: EN + AR, all 7 emirates
+  data/locale_en.json       Expected English strings for assertions
+  data/locale_ar.json       Expected Arabic strings for assertions
+  helpers/testHelpers.js    Schema validators and response time helpers
+  specs/api/                health, policies, fines, appointments, chat
+  specs/ui/                 chat, accessibility
+
+eval/
+  golden-dataset/           20 versioned golden cases
+  configs/promptfoo.yaml    Promptfoo eval config
+  baselines/                Regression baseline
+  adversarial/red-team.js   30-attack suite
+  prod-simulator/           Production traffic simulator
+  observability/            Metrics store and dashboard
+
+tests/performance/
+  load-test.js              k6 load test (3 VUs)
+
+.github/workflows/
+  pr-checks.yml
+  develop-full-suite.yml
+  nightly.yml
+```
+
+---
+
+## Key decisions
+
+**Keyword retrieval over embeddings** — 55 documents is small enough that keyword + synonym expansion with emirate boost scoring works well and is fully deterministic and debuggable. The retrieval layer can be swapped for a vector DB without touching the eval or test layers.
+
+**Noise band regression gating** — per-case gating on 20 tests produces a high false-alarm rate. The gate checks aggregate pass rate vs baseline within a 20% noise band instead.
+
+**Fast pre-check before tool detection** — a regex pre-check runs before any Groq API call. Most messages are plain questions and skip tool detection entirely. Only messages with a plate number and fine keyword, or a booking keyword and date, proceed to Groq.
+
+**Topic-aware memory** — session history is trimmed to 6 turns but the current topic is stored separately so topic change detection still works after the original message is trimmed out.
+
+---
+
+## Branch structure
+
+```
+main      stable, deployed to Render
+develop   integration branch
+feature/* individual feature branches
 ```
