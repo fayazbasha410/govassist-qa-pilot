@@ -1,49 +1,36 @@
 # GovMurshid — Setup Guide
 
-> Follow this guide after cloning the repo to get everything installed, running, and verified from scratch.
+Follow this guide after cloning to get everything running from scratch.
+
+**Live URL:** https://govmurshid.onrender.com (auto-deploys from main)
 
 ---
 
 ## Prerequisites
 
-### 1. Node.js (v20 or higher)
+**Node.js v20+**
 ```bash
 node -v
-```
-If missing or below v20:
-```bash
-brew install node
+# if missing: brew install node
 ```
 
-### 2. Git
+**Git**
 ```bash
 git --version
-```
-If missing: `brew install git`
-
-### 3. Ollama (local LLM — free, no API key needed)
-Download from [ollama.com/download](https://ollama.com/download), install the Mac app, and launch it. You will see a llama icon appear in your menu bar.
-
-Pull the model:
-```bash
-ollama pull llama3.2
+# if missing: brew install git
 ```
 
-Verify it works:
-```bash
-ollama run llama3.2 "Say hello in one sentence."
-```
+**Groq API key** (free)
+Sign up at https://console.groq.com, create an API key, keep it ready.
 
-### 4. k6 (performance testing)
+**k6**
 ```bash
 brew install k6
-k6 version
 ```
 
-### 5. Promptfoo (RAG evaluation)
+**Promptfoo**
 ```bash
 npm install -g promptfoo
-promptfoo --version
 ```
 
 ---
@@ -59,9 +46,17 @@ npx playwright install --with-deps chromium
 
 ---
 
-## Step 2 — Start the server
+## Step 2 — Set up environment
 
-Open Terminal Tab 1:
+Create a `.env` file in the project root:
+```
+GROQ_API_KEY=your_groq_key_here
+```
+
+---
+
+## Step 3 — Start the server
+
 ```bash
 npm start
 ```
@@ -69,147 +64,131 @@ npm start
 Expected output:
 ```
 GovMurshid server running at http://localhost:3000
-Health check: http://localhost:3000/api/health
+LLM: Groq API (llama-3.1-8b-instant)
+Tool calling: fast pre-check + Groq native
+Memory: multi-turn + topic change detection
+Policies: 55 across all 7 emirates
+Arabic support: enabled
 ```
 
-Verify:
+Verify it is running:
 ```bash
 curl http://localhost:3000/api/health
 ```
 
 Expected:
 ```json
-{"status":"ok","version":"1.0.0","model":"llama3.2","name":"GovMurshid"}
+{"status":"ok","version":"3.3.0","name":"GovMurshid","policies":55}
 ```
 
 ---
 
-## Step 3 — Open the app
+## Step 4 — Open the app
 
 ```
 http://localhost:3000
 ```
 
-Try clicking the **"Driving license"** suggestion. You should see a grounded answer with a `📄 RAG: POL-001` tag confirming the retrieval layer is working.
+Click the Driving license suggestion. You should see a grounded answer with a RAG tag and the policy IDs that were retrieved.
 
 ---
 
-## Step 4 — Verify everything works
+## Step 5 — Run all checks
 
-Open Terminal Tab 2 (keep Tab 1 running). Run each check in order:
+Keep the server running in one terminal. Open a second terminal for these:
 
-### Check 1 — Policy data
-```bash
-node -e "
-const p = require('./src/data/policies');
-console.log('Total policies:', p.length);
-if (p.length < 35) { console.error('FAIL: Missing policies'); process.exit(1); }
-console.log('PASS: All', p.length, 'policies loaded');
-"
-```
-Expected: `PASS: All 35 policies loaded`
-
-### Check 2 — Playwright tests
+**Playwright tests (200 tests)**
 ```bash
 npx playwright test
 ```
-Expected: `66 passed`
+Expected: 200 passed
 
-### Check 3 — Adversarial red team
+**Red team**
 ```bash
 npm run eval:redteam
 ```
-Expected: `✅ ALL GUARDRAILS HOLDING — red team passed` and `20/20 correctly handled`
+Expected: 30/30 correctly handled
 
-### Check 4 — RAG regression gate
+**Regression gate**
 ```bash
 npm run eval:regression
 ```
-Expected: `✅ WITHIN NOISE BAND` or `✅ NO REGRESSION`
+Expected: WITHIN NOISE BAND (80% or above is healthy)
 
-The eval uses llama3.2 as judge so results have some natural variance. A pass rate of 80%+ is healthy and within the noise band.
-
-### Check 5 — Production eval simulation
+**Production eval**
 ```bash
 npm run eval:prod
 ```
-Expected: `Passed: 10/10 (100.0%)` or close to it.
+Expected: 13/13
 
-### Check 6 — Performance load test
+**k6 load test**
 ```bash
 npm run perf
 ```
-Expected (all 4 thresholds green):
-```
-Health p95 < 500ms:   ✅ PASS
-Search p95 < 500ms:   ✅ PASS
-Chat p95 < 30000ms:   ✅ PASS
-Error rate < 5%:      ✅ PASS
-```
+Expected: 4/4 thresholds passing
 
-### Check 7 — Observability dashboard
+**Observability dashboard**
 ```bash
 npm run eval:dashboard
 ```
-Expected: Opens `eval/observability/dashboard.html` in your browser showing a quality trend chart.
+Opens dashboard.html in your browser.
 
 ---
 
 ## Deployment
 
-GovMurshid runs fully locally — no cloud account or API key required. The LLM (llama3.2) runs via Ollama on your machine.
+The app is deployed on Render.com at https://govmurshid.onrender.com.
 
-To deploy to a server:
-1. Replace Ollama with an API-based LLM (Anthropic, OpenAI, Azure OpenAI)
-2. Set the API key as an environment variable and update `callOllama()` in `src/server.js`
-3. Deploy the Node.js server to any platform (Railway, Render, AWS, Azure)
-4. Update `BASE_URL` in tests and eval configs via environment variables
+It auto-deploys when you push to main. The GROQ_API_KEY is set as an environment variable in the Render dashboard.
+
+Note: the free tier spins down after 15 minutes of inactivity. The first request after sleep takes about 30 seconds.
+
+To deploy your own instance:
+1. Fork the repo
+2. Create a new Web Service on Render pointing to your fork
+3. Set GROQ_API_KEY in Render environment variables
+4. Push to main to trigger a deploy
 
 ---
 
 ## Troubleshooting
 
-### "command not found: ollama"
-Make sure the Ollama app is open (llama icon in menu bar), then:
-```bash
-export PATH=$PATH:/usr/local/bin
-ollama pull llama3.2
-```
+**Connection error from server**
+Your Groq API key is invalid or missing. Check your .env file and verify the key at https://console.groq.com/keys.
 
-### "LLM unavailable" from the server
-Ollama must be running before `npm start`. Launch the Ollama app first, wait for the menu bar icon, then start the server.
+**LangSmith 403 error**
+If you see LANGSMITH_TRACING in your .env, set it to false. LangSmith is not required for the app to run.
 
-### Playwright UI tests failing
-Make sure `npm start` is running in Tab 1 before running `npx playwright test` in Tab 2.
+**Playwright tests failing**
+Make sure npm start is running in another terminal before running tests.
 
-### "Baseline not found" from regression gate
-Check that `eval/baselines/baseline-v1.json` exists. If missing, run:
-```bash
-cd eval/configs && promptfoo eval --config promptfoo.yaml
-```
+**Baseline not found from regression gate**
+The file eval/baselines/baseline-v1.json should exist in the repo. If missing, run the promptfoo eval once to generate a new baseline.
 
-### k6 not found
+**k6 not found**
 ```bash
 brew install k6
 ```
 
-### promptfoo not found
+**promptfoo not found**
 ```bash
 npm install -g promptfoo
 ```
 
+**Groq rate limit during tests**
+The free tier allows 6000 tokens per minute. Tests run with 1 worker. If you hit rate limits, wait a minute and retry. playwright.config.js has a 120s timeout to handle this.
+
 ---
 
-## npm Scripts Reference
+## Scripts reference
 
 | Script | What it does |
 |---|---|
-| `npm start` | Start the GovMurshid server on port 3000 |
-| `npx playwright test` | Run all 66 UI and API tests |
-| `npm run eval` | Run Promptfoo RAG eval (15 golden cases) |
-| `npm run eval:regression` | Run regression gate vs baseline |
-| `npm run eval:redteam` | Run 20-attack adversarial suite |
-| `npm run eval:prod` | Run production traffic simulation |
-| `npm run eval:dashboard` | Generate and open observability dashboard |
-| `npm run eval:view` | Open Promptfoo visual report UI |
-| `npm run perf` | Run k6 load test (50 seconds) |
+| `npm start` | Start server on port 3000 |
+| `npx playwright test` | Run all 200 tests |
+| `npm run eval` | Promptfoo RAG eval (20 cases) |
+| `npm run eval:regression` | Regression gate vs baseline |
+| `npm run eval:redteam` | 30-attack adversarial suite |
+| `npm run eval:prod` | Production traffic simulation |
+| `npm run eval:dashboard` | Generate observability dashboard |
+| `npm run perf` | k6 load test |

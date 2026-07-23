@@ -1,0 +1,44 @@
+{
+    "app_name": "GovMurshid",
+    "driving_license": "رخصة القيادة",
+    "driving_renewal": "تجديد",
+    "driving_moi": "moi.gov.ae",
+    "driving_fee": "درهم",
+  
+    "health_insurance": "التأمين الصحي",
+    "health_mandatory": "إلزامي",
+    "health_2025": "2025",
+    "health_whi": "320",
+  
+    "school_enrollment": "مدرسة",
+    "school_moe": "وزارة التربية",
+  
+    "ejari": "إيجاري",
+    "tenancy": "عقد الإيجار",
+  
+    "golden_visa": "الإقامة الذهبية",
+    "emirates_id": "الهوية الإماراتية",
+  
+    "fine_unpaid": "غرامات",
+    "fine_aed": "درهم",
+    "fine_plate": "AD-1234",
+  
+    "appointment_confirmed": "تم تأكيد الموعد",
+    "appointment_prefix": "TAMM-",
+  
+    "guardrail_injection": "يمكنني فقط المساعدة في خدمات حكومة الإمارات",
+    "guardrail_off_topic": "GovMurshid",
+  
+    "no_result": "لم أتمكن من العثور",
+    "arabic_pattern": "[\\u0600-\\u06FF]",
+  
+    "emirates": {
+      "abu_dhabi": "أبوظبي",
+      "dubai": "دبي",
+      "sharjah": "الشارقة",
+      "ajman": "عجمان",
+      "ras_al_khaimah": "رأس الخيمة",
+      "fujairah": "الفجيرة",
+      "umm_al_quwain": "أم القيوين"
+    }
+  }  
