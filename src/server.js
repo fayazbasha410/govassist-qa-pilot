@@ -55,6 +55,7 @@ function getSession(sessionId) {
       currentTopic: null,   // e.g. 'driving'
       currentEmirate: null, // e.g. 'dubai'
       topicChanged: false,
+      topicTurns: 0,        // turns within the current topic (resets on topic change)
       lastActivity: Date.now(),
     });
   }
@@ -513,10 +514,13 @@ If the answer is not in the context, say so clearly and suggest the user visit t
 // ROUTES
 // ─────────────────────────────────────────
 
+// Silence favicon 404
+app.get('/favicon.ico', (req, res) => res.status(204).end());
+
 app.get('/api/health', (req, res) => {
   res.json({
     status: 'ok',
-    version: '3.3.1',
+    version: '3.3.2',
     model: 'groq/llama-3.1-8b-instant',
     name: 'GovMurshid',
     toolCalling: 'native',
@@ -589,6 +593,12 @@ app.post('/api/chat', async (req, res) => {
   if (incomingTopic)   session.currentTopic   = incomingTopic;
   if (incomingEmirate) session.currentEmirate = incomingEmirate;
   session.topicChanged = topicChanged;
+  // Reset turn counter on topic change, increment within same topic
+  if (topicChanged || session.topicTurns === 0) {
+    session.topicTurns = 1;
+  } else {
+    session.topicTurns += 1;
+  }
 
   // ── 4. Follow-up enrichment ────────────────────────────────────────
   // If message is a short follow-up (e.g. "how about sharjah?"),
@@ -641,7 +651,7 @@ app.post('/api/chat', async (req, res) => {
       retrievedDocs: [],
       toolUsed: { name: toolIntent.tool, params: toolIntent.params, result: toolResult },
       language: isArabic ? 'ar' : 'en',
-      memory: { turns: Math.floor(session.history.length / 2), topic: session.currentTopic, emirate: session.currentEmirate }
+      memory: { turns: session.topicTurns, topic: session.currentTopic, emirate: session.currentEmirate }
     });
   }
 
@@ -705,7 +715,7 @@ app.post('/api/chat', async (req, res) => {
       toolUsed: null,
       language: isArabic ? 'ar' : 'en',
       memory: {
-        turns: Math.floor(session.history.length / 2),
+        turns: session.topicTurns,
         topic: session.currentTopic,
         emirate: session.currentEmirate,
         topicChanged,
@@ -723,7 +733,7 @@ app.post('/api/chat', async (req, res) => {
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`GovMurshid v3.3.1 running at http://localhost:${PORT}`);
+  console.log(`GovMurshid v3.3.2 running at http://localhost:${PORT}`);
   console.log(`LLM: Groq API (llama-3.1-8b-instant)`);
   console.log(`Tool calling: Groq native function calling ✅`);
   console.log(`Multi-turn memory: session-based (${SESSION_MAX_TURNS} turns, 30min TTL) ✅`);
