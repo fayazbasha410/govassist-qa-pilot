@@ -16,9 +16,8 @@ app.use(express.static(path.join(__dirname, '../public')));
 
 const sessions = new Map();
 const SESSION_MAX_TURNS = 6;
-const SESSION_TTL_MS = 30 * 60 * 1000; // 30 minutes
+const SESSION_TTL_MS = 30 * 60 * 1000;
 
-// Topic groups — used to detect topic changes and enrich follow-ups
 const TOPIC_GROUPS = {
   driving:  ['driving', 'license', 'licence', 'vehicle', 'registration', 'traffic', 'fine', 'fines', 'plate', 'renew', 'renewal', 'road', 'car'],
   school:   ['school', 'education', 'enroll', 'enrollment', 'student', 'khda', 'adek', 'university', 'college', 'child', 'kindergarten', 'kg'],
@@ -30,7 +29,6 @@ const TOPIC_GROUPS = {
   utilities:['electricity', 'water', 'dewa', 'addc', 'utility', 'bill'],
 };
 
-// Known emirates for follow-up detection
 const EMIRATES = ['abu dhabi', 'dubai', 'sharjah', 'ajman', 'umm al quwain', 'ras al khaimah', 'fujairah', 'uaq', 'rak'];
 
 function detectTopicGroup(text) {
@@ -51,11 +49,11 @@ function detectEmirate(text) {
 function getSession(sessionId) {
   if (!sessions.has(sessionId)) {
     sessions.set(sessionId, {
-      history: [],          // [{role, content}]
-      currentTopic: null,   // e.g. 'driving'
-      currentEmirate: null, // e.g. 'dubai'
+      history: [],
+      currentTopic: null,
+      currentEmirate: null,
       topicChanged: false,
-      topicTurns: 0,        // turns within the current topic (resets on topic change)
+      topicTurns: 0,
       lastActivity: Date.now(),
     });
   }
@@ -66,34 +64,65 @@ function getSession(sessionId) {
 
 function addToHistory(session, role, content) {
   session.history.push({ role, content });
-  // Sliding window — keep last N turns
   if (session.history.length > SESSION_MAX_TURNS * 2) {
     session.history = session.history.slice(-SESSION_MAX_TURNS * 2);
   }
 }
 
-// Clean up expired sessions every 10 minutes
 setInterval(() => {
   const now = Date.now();
   for (const [id, session] of sessions.entries()) {
-    if (now - session.lastActivity > SESSION_TTL_MS) {
-      sessions.delete(id);
-    }
+    if (now - session.lastActivity > SESSION_TTL_MS) sessions.delete(id);
   }
 }, 10 * 60 * 1000);
 
 // ─────────────────────────────────────────
-// FOLLOW-UP ENRICHMENT
+// CONFIDENCE SCORING
 // ─────────────────────────────────────────
 //
-// Detects short follow-up messages like "how about sharjah?" or "what about dubai?"
-// and rewrites them into a full query using the session's remembered topic.
+// Scores how confident we are in the RAG answer based on:
+// - topDoc score (how well the best doc matched)
+// - score gap (how much better the top doc is vs second)
+// - emirate match (did we find an emirate-specific policy?)
 //
-// Examples:
-//   "how about sharjah" + topic=driving + emirate=dubai
-//     → "driving license renewal sharjah"
-//   "how about abu dhabi" + topic=school + emirate=dubai
-//     → "school enrollment abu dhabi"
+// Returns: { level: 'high'|'medium'|'low', label, policyId, reason }
+
+function computeConfidence(docs, query) {
+  if (!docs || docs.length === 0) {
+    return { level: 'low', label: 'Low confidence', policyId: null, reason: 'No matching policies found' };
+  }
+
+  const top = docs[0];
+  const second = docs[1];
+  const topScore = top.score || 0;
+  const scoreGap = second ? topScore - (second.score || 0) : topScore;
+  const queryEmirate = detectEmirate(query);
+  const emirateMatch = queryEmirate && (top.emirate || '').toLowerCase() === queryEmirate;
+
+  let level, label, reason;
+
+  if (topScore >= 8 && scoreGap >= 3) {
+    level = 'high';
+    label = 'High confidence';
+    reason = emirateMatch
+      ? `Matched emirate-specific policy ${top.id}`
+      : `Strong match on ${top.id}`;
+  } else if (topScore >= 5 || scoreGap >= 2) {
+    level = 'medium';
+    label = 'Medium confidence';
+    reason = `Partial match — please verify at the official portal`;
+  } else {
+    level = 'low';
+    label = 'Low confidence';
+    reason = `Weak match — please verify at the relevant UAE portal`;
+  }
+
+  return { level, label, policyId: top.id, reason };
+}
+
+// ─────────────────────────────────────────
+// FOLLOW-UP ENRICHMENT
+// ─────────────────────────────────────────
 
 const FOLLOW_UP_TRIGGERS = [
   /^how about (.+)/i,
@@ -106,7 +135,6 @@ const FOLLOW_UP_TRIGGERS = [
 
 function isFollowUp(message) {
   const lower = message.trim().toLowerCase();
-  // Short message that only mentions an emirate (or very few words) is a follow-up
   if (lower.split(/\s+/).length <= 4 && EMIRATES.some(e => lower.includes(e))) return true;
   return FOLLOW_UP_TRIGGERS.some(r => r.test(lower));
 }
@@ -114,19 +142,11 @@ function isFollowUp(message) {
 function enrichFollowUp(message, session) {
   const detectedEmirate = detectEmirate(message);
   const detectedTopic = detectTopicGroup(message);
-
-  // Use detected topic or remembered topic
   const topic = detectedTopic || session.currentTopic;
-  // Use detected emirate or remembered emirate
   const emirate = detectedEmirate || session.currentEmirate;
-
-  // If we can't infer anything useful, return original
   if (!topic && !emirate) return message;
-
-  // Build enriched query from topic keywords + emirate
   const topicKeywords = topic ? TOPIC_GROUPS[topic].slice(0, 3).join(' ') : '';
   const enriched = [topicKeywords, emirate].filter(Boolean).join(' ');
-
   console.log(`🧠 Follow-up enrichment: "${message}" → "${enriched}" (topic: ${topic}, emirate: ${emirate})`);
   return enriched;
 }
@@ -175,7 +195,6 @@ function retrieveRelevantDocs(query, topK = 5) {
     syns.forEach(s => expandedWords.add(s));
   }
 
-  // Detect emirate in the query for boosting
   const queryEmirate = detectEmirate(query);
 
   const scored = policies.map(doc => {
@@ -187,26 +206,21 @@ function retrieveRelevantDocs(query, topK = 5) {
     ).toLowerCase();
 
     let score = 0;
-
-    // Keyword match score
     for (const word of expandedWords) {
       if (text.includes(word)) score += 1;
     }
-
-    // Title bonus
     for (const word of queryWords) {
       if (doc.title.toLowerCase().includes(word)) score += 2;
     }
 
-    // ✅ Emirate boost — prioritise emirate-specific policies
     if (queryEmirate) {
       const docEmirate = (doc.emirate || '').toLowerCase();
       if (docEmirate === queryEmirate) {
-        score += 5; // Strong boost for exact emirate match
+        score += 5;
       } else if (docEmirate === 'all uae' || docEmirate === 'uae') {
-        score += 1; // Small boost for all-UAE policies
+        score += 1;
       } else if (docEmirate && docEmirate !== queryEmirate) {
-        score -= 2; // Penalty for wrong emirate
+        score -= 2;
       }
     }
 
@@ -224,8 +238,7 @@ function retrieveRelevantDocs(query, topK = 5) {
 // ─────────────────────────────────────────
 
 function detectArabic(text) {
-  const arabicPattern = /[\u0600-\u06FF]/;
-  return arabicPattern.test(text);
+  return /[\u0600-\u06FF]/.test(text);
 }
 
 function translateArabicQuery(text) {
@@ -297,24 +310,11 @@ function translateArabicQuery(text) {
     'رأس الخيمة':                        'Ras Al Khaimah',
     'الفجيرة':                           'Fujairah',
     'أم القيوين':                        'Umm Al Quwain',
-    'كيف':                               '',
-    'ما هي':                             '',
-    'ما هو':                             '',
-    'هل':                                '',
-    'من':                                '',
-    'متى':                               '',
-    'أين':                               '',
-    'في':                                '',
-    'على':                               '',
-    'من يحق له':                         '',
-    'يحق له':                            '',
-    'للحصول على':                        '',
-    'التقدم':                            '',
-    'أسجل':                              'registration',
-    'أجدد':                              'renewal',
-    'أحصل':                              '',
-    'يمكنني':                            '',
-    'أريد':                              '',
+    'كيف': '', 'ما هي': '', 'ما هو': '', 'هل': '', 'من': '',
+    'متى': '', 'أين': '', 'في': '', 'على': '', 'من يحق له': '',
+    'يحق له': '', 'للحصول على': '', 'التقدم': '',
+    'أسجل': 'registration', 'أجدد': 'renewal',
+    'أحصل': '', 'يمكنني': '', 'أريد': '',
   };
 
   let translated = text;
@@ -330,7 +330,7 @@ function translateArabicQuery(text) {
 }
 
 // ─────────────────────────────────────────
-// GUARDRAILS (English + Arabic)
+// GUARDRAILS
 // ─────────────────────────────────────────
 
 function checkGuardrails(message) {
@@ -341,46 +341,34 @@ function checkGuardrails(message) {
     'pretend you are', 'forget your instructions', 'jailbreak', 'dan mode',
     'developer mode', 'system prompt', 'override', 'bypass'
   ];
-
   const arabicBanned = [
     'تجاهل التعليمات', 'تجاهل جميع التعليمات', 'أنت الآن', 'تظاهر بأنك',
     'انسَ تعليماتك', 'تجاوز', 'بدون قيود', 'بلا قيود', 'وضع المطور',
     'الموجه النظامي', 'تجاوز إعداداتك', 'تجاوز القيود', 'تصرف كمساعد مختلف'
   ];
-
   const offTopic = [
     'weather', 'recipe', 'sports', 'movie', 'music', 'joke', 'game',
     'dating', 'stock', 'crypto', 'bitcoin', 'football', 'cricket',
     'basketball', 'tennis', 'match'
   ];
-
   const arabicOffTopic = [
     'الطقس', 'وصفة', 'رياضة', 'كرة القدم', 'كرة السلة', 'مباراة',
     'فيلم', 'موسيقى', 'نكتة', 'العملات المشفرة', 'بيتكوين', 'مواعدة',
     'الأسهم', 'البورصة'
   ];
 
-  for (const phrase of banned) {
-    if (lower.includes(phrase)) {
-      return { blocked: true, reason: 'prompt_injection', message: 'I can only assist with UAE government services. I cannot follow instructions that attempt to change my behaviour.' };
-    }
+  for (const p of banned) {
+    if (lower.includes(p)) return { blocked: true, reason: 'prompt_injection', message: 'I can only assist with UAE government services. I cannot follow instructions that attempt to change my behaviour.' };
   }
-  for (const phrase of arabicBanned) {
-    if (message.includes(phrase)) {
-      return { blocked: true, reason: 'prompt_injection', message: 'يمكنني فقط المساعدة في خدمات حكومة الإمارات. لا يمكنني اتباع تعليمات تحاول تغيير سلوكي.' };
-    }
+  for (const p of arabicBanned) {
+    if (message.includes(p)) return { blocked: true, reason: 'prompt_injection', message: 'يمكنني فقط المساعدة في خدمات حكومة الإمارات. لا يمكنني اتباع تعليمات تحاول تغيير سلوكي.' };
   }
-  for (const topic of offTopic) {
-    if (lower.includes(topic)) {
-      return { blocked: true, reason: 'off_topic', message: `I'm GovMurshid, specialising in UAE government services across all seven emirates. I can help with licenses, fines, appointments, visas, housing, healthcare, education, business, and social services.` };
-    }
+  for (const t of offTopic) {
+    if (lower.includes(t)) return { blocked: true, reason: 'off_topic', message: `I'm GovMurshid, specialising in UAE government services across all seven emirates. I can help with licenses, fines, appointments, visas, housing, healthcare, education, business, and social services.` };
   }
-  for (const topic of arabicOffTopic) {
-    if (message.includes(topic)) {
-      return { blocked: true, reason: 'off_topic', message: `أنا GovMurshid، متخصص في خدمات حكومة الإمارات عبر جميع الإمارات السبع. يمكنني المساعدة في الرخص والغرامات والمواعيد والتأشيرات والإسكان والرعاية الصحية والتعليم والأعمال والخدمات الاجتماعية.` };
-    }
+  for (const t of arabicOffTopic) {
+    if (message.includes(t)) return { blocked: true, reason: 'off_topic', message: `أنا GovMurshid، متخصص في خدمات حكومة الإمارات عبر جميع الإمارات السبع.` };
   }
-
   return { blocked: false };
 }
 
@@ -426,7 +414,7 @@ const TOOL_DEFINITIONS = [
     type: 'function',
     function: {
       name: 'checkFineStatus',
-      description: 'Check outstanding traffic or government fines for a vehicle using its plate number. Use when the user asks about fines, penalties, or unpaid amounts for a specific vehicle plate.',
+      description: 'Check outstanding traffic or government fines for a vehicle using its plate number.',
       parameters: {
         type: 'object',
         properties: {
@@ -440,16 +428,15 @@ const TOOL_DEFINITIONS = [
     type: 'function',
     function: {
       name: 'bookAppointment',
-      description: 'Book a government service appointment. Use when the user wants to schedule an appointment for a specific service and date.',
+      description: 'Book a government service appointment for a specific service and date.',
       parameters: {
         type: 'object',
         properties: {
           service: {
             type: 'string',
-            description: 'The service to book.',
             enum: ['driving-license', 'vehicle-registration', 'emirates-id', 'residency-visa', 'health-card']
           },
-          date: { type: 'string', description: 'Appointment date in YYYY-MM-DD format' }
+          date: { type: 'string', description: 'Date in YYYY-MM-DD format' }
         },
         required: ['service', 'date']
       }
@@ -463,10 +450,7 @@ async function detectToolIntentWithLLM(message, retries = 3) {
       const completion = await groq.chat.completions.create({
         model: 'llama-3.1-8b-instant',
         messages: [
-          {
-            role: 'system',
-            content: 'You are a UAE government services assistant. Decide if the user needs a tool: checkFineStatus for vehicle fines, bookAppointment for scheduling. If neither applies, do not call any tool.'
-          },
+          { role: 'system', content: 'UAE government services assistant. Use checkFineStatus for vehicle fines, bookAppointment for scheduling. If neither applies, do not call any tool.' },
           { role: 'user', content: message }
         ],
         tools: TOOL_DEFINITIONS,
@@ -474,22 +458,16 @@ async function detectToolIntentWithLLM(message, retries = 3) {
         temperature: 0,
         max_tokens: 256
       });
-
       const responseMessage = completion.choices[0].message;
       if (responseMessage.tool_calls && responseMessage.tool_calls.length > 0) {
         const toolCall = responseMessage.tool_calls[0];
-        const toolName = toolCall.function.name;
-        const toolParams = JSON.parse(toolCall.function.arguments);
-        console.log(`🔧 LLM selected tool: ${toolName}`, toolParams);
-        return { tool: toolName, params: toolParams };
+        return { tool: toolCall.function.name, params: JSON.parse(toolCall.function.arguments) };
       }
       return null;
     } catch (err) {
       const isRateLimit = err.status === 429 || err.message?.includes('429');
       if (isRateLimit && attempt < retries) {
-        const waitMs = attempt * 6000;
-        console.log(`⏳ Groq rate limit (tool call) — waiting ${waitMs / 1000}s (retry ${attempt}/${retries})`);
-        await new Promise(r => setTimeout(r, waitMs));
+        await new Promise(r => setTimeout(r, attempt * 6000));
         continue;
       }
       console.error('⚠️ Tool detection failed:', err.message);
@@ -499,7 +477,7 @@ async function detectToolIntentWithLLM(message, retries = 3) {
 }
 
 // ─────────────────────────────────────────
-// SYSTEM PROMPTS
+// SYSTEM PROMPT
 // ─────────────────────────────────────────
 
 const ACTIVE_SYSTEM_PROMPT = `You are GovMurshid, an AI guide for UAE government services across all seven emirates — Abu Dhabi, Dubai, Sharjah, Ajman, Umm Al Quwain, Ras Al Khaimah, and Fujairah.
@@ -520,11 +498,12 @@ app.get('/favicon.ico', (req, res) => res.status(204).end());
 app.get('/api/health', (req, res) => {
   res.json({
     status: 'ok',
-    version: '3.3.2',
+    version: '3.4.0',
     model: 'groq/llama-3.1-8b-instant',
     name: 'GovMurshid',
     toolCalling: 'native',
     memory: 'session-based',
+    confidenceScoring: true,
   });
 });
 
@@ -536,18 +515,15 @@ app.get('/api/policies/search', (req, res) => {
 });
 
 app.get('/api/tools/fines/:plateNumber', (req, res) => {
-  const result = checkFineStatus(req.params.plateNumber);
-  res.json(result);
+  res.json(checkFineStatus(req.params.plateNumber));
 });
 
 app.post('/api/tools/appointment', (req, res) => {
   const { service, date } = req.body;
   if (!service || !date) return res.status(400).json({ error: 'Missing service or date' });
-  const result = bookAppointment(service, date);
-  res.json(result);
+  res.json(bookAppointment(service, date));
 });
 
-// Clear session endpoint (for testing)
 app.delete('/api/session/:sessionId', (req, res) => {
   sessions.delete(req.params.sessionId);
   res.json({ cleared: true });
@@ -571,7 +547,8 @@ app.post('/api/chat', async (req, res) => {
       reply: guard.message,
       guardrail: { triggered: true, reason: guard.reason },
       retrievedDocs: [],
-      toolUsed: null
+      toolUsed: null,
+      confidence: null,
     });
   }
 
@@ -582,18 +559,14 @@ app.post('/api/chat', async (req, res) => {
   const sid = sessionId || 'default';
   const session = getSession(sid);
 
-  // Detect topic and emirate from the incoming message
   const incomingTopic   = detectTopicGroup(message);
   const incomingEmirate = detectEmirate(message);
+  const topicChanged    = incomingTopic && session.currentTopic && incomingTopic !== session.currentTopic;
 
-  // Detect topic change
-  const topicChanged = incomingTopic && session.currentTopic && incomingTopic !== session.currentTopic;
-
-  // Update session state
   if (incomingTopic)   session.currentTopic   = incomingTopic;
   if (incomingEmirate) session.currentEmirate = incomingEmirate;
   session.topicChanged = topicChanged;
-  // Reset turn counter on topic change, increment within same topic
+
   if (topicChanged || session.topicTurns === 0) {
     session.topicTurns = 1;
   } else {
@@ -601,22 +574,14 @@ app.post('/api/chat', async (req, res) => {
   }
 
   // ── 4. Follow-up enrichment ────────────────────────────────────────
-  // If message is a short follow-up (e.g. "how about sharjah?"),
-  // rebuild the retrieval query from session memory.
   const followUp = isFollowUp(message) && (session.currentTopic || session.currentEmirate);
   let retrievalMessage = message;
-  if (followUp) {
-    retrievalMessage = enrichFollowUp(message, session);
-  }
+  if (followUp) retrievalMessage = enrichFollowUp(message, session);
 
-  // ── 5. Tool intent detection ───────────────────────────────────────
-  // Only call Groq tool detection when the message looks like it could
-  // contain a plate number or an explicit booking request.
-  // This prevents emirate follow-ups ("what about ajman?") from
-  // hallucinating tool calls with no plate number.
-  const PLATE_PATTERN = /\b[A-Z]{1,3}[-\s]?\d{1,5}\b/i;
+  // ── 5. Tool intent detection (only if plate/booking keyword present) ──
+  const PLATE_PATTERN   = /\b[A-Z]{1,3}[-\s]?\d{1,5}\b/i;
   const BOOKING_KEYWORDS = ['book', 'appointment', 'schedule', 'reserve', 'slot'];
-  const mightNeedTool = PLATE_PATTERN.test(message) ||
+  const mightNeedTool   = PLATE_PATTERN.test(message) ||
     BOOKING_KEYWORDS.some(k => message.toLowerCase().includes(k));
 
   const toolIntent = mightNeedTool ? await detectToolIntentWithLLM(message) : null;
@@ -641,7 +606,6 @@ app.post('/api/chat', async (req, res) => {
         : `عذراً، ${toolResult.message}`;
     }
 
-    // Save to history
     addToHistory(session, 'user', message);
     addToHistory(session, 'assistant', toolReply);
 
@@ -651,17 +615,13 @@ app.post('/api/chat', async (req, res) => {
       retrievedDocs: [],
       toolUsed: { name: toolIntent.tool, params: toolIntent.params, result: toolResult },
       language: isArabic ? 'ar' : 'en',
-      memory: { turns: session.topicTurns, topic: session.currentTopic, emirate: session.currentEmirate }
+      memory: { turns: session.topicTurns, topic: session.currentTopic, emirate: session.currentEmirate },
+      confidence: { level: 'high', label: 'Tool result', policyId: null, reason: 'Live data from government system' },
     });
   }
 
-  // ── 6. RAG retrieval ───────────────────────────────────────────────
-  const retrievalQuery = isArabic
-    ? translateArabicQuery(retrievalMessage)
-    : retrievalMessage;
-
-  // For follow-up messages, use a tighter topK so we don't dump
-  // all policies for that emirate — just the most relevant ones.
+  // ── 6. RAG retrieval ──────────────────────────────────────────────
+  const retrievalQuery = isArabic ? translateArabicQuery(retrievalMessage) : retrievalMessage;
   const topK = followUp ? 2 : 5;
   const docs = retrieveRelevantDocs(retrievalQuery, topK);
 
@@ -674,37 +634,38 @@ app.post('/api/chat', async (req, res) => {
       guardrail: { triggered: false },
       retrievedDocs: [],
       toolUsed: null,
-      language: isArabic ? 'ar' : 'en'
+      language: isArabic ? 'ar' : 'en',
+      confidence: { level: 'low', label: 'Low confidence', policyId: null, reason: 'No matching policies found' },
     });
   }
 
-  // ── 7. Build prompt with memory context ───────────────────────────
+  // ── 7. Confidence scoring ─────────────────────────────────────────
+  const confidence = computeConfidence(docs, retrievalQuery);
+
+  // ── 8. Build prompt ───────────────────────────────────────────────
   const context = docs.map(d => `[${d.id}] ${d.title} (${d.emirate || 'UAE'}):\n${d.content}`).join('\n\n');
 
   const languageInstruction = isArabic
     ? `\nالمستخدم يكتب بالعربية. يجب أن تجيب باللغة العربية الفصحى الحديثة بالكامل. احتفظ بمعرّفات السياسات مثل POL-001 باللغة الإنجليزية.`
     : `\nRespond in English.`;
 
-  // For follow-ups, tell the LLM to stay on the remembered topic only
   const topicFocusInstruction = followUp && session.currentTopic
-    ? `\nThe user is asking a follow-up question about ${session.currentTopic}${session.currentEmirate ? ` in ${session.currentEmirate}` : ''}. Answer ONLY about ${session.currentTopic} — do not introduce other topics.`
+    ? `\nThe user is asking a follow-up about ${session.currentTopic}${session.currentEmirate ? ` in ${session.currentEmirate}` : ''}. Answer ONLY about ${session.currentTopic} — do not introduce other topics.`
     : '';
 
-  // Inject conversation history into system prompt
   let historyContext = '';
   if (session.history.length > 0) {
-    const recentHistory = session.history.slice(-6); // last 3 turns
+    const recentHistory = session.history.slice(-6);
     historyContext = '\n\nCONVERSATION HISTORY:\n' +
       recentHistory.map(h => `${h.role === 'user' ? 'User' : 'Assistant'}: ${h.content}`).join('\n');
   }
 
   const systemPrompt = `${ACTIVE_SYSTEM_PROMPT}${languageInstruction}${topicFocusInstruction}${historyContext}\n\nPOLICY CONTEXT:\n${context}`;
 
-  // ── 8. LLM call ───────────────────────────────────────────────────
+  // ── 9. LLM call ───────────────────────────────────────────────────
   try {
     const llmReply = await callOllama(systemPrompt, message);
 
-    // Save to history
     addToHistory(session, 'user', message);
     addToHistory(session, 'assistant', llmReply);
 
@@ -714,12 +675,8 @@ app.post('/api/chat', async (req, res) => {
       retrievedDocs: docs.map(d => ({ id: d.id, title: d.title, score: d.score, emirate: d.emirate })),
       toolUsed: null,
       language: isArabic ? 'ar' : 'en',
-      memory: {
-        turns: session.topicTurns,
-        topic: session.currentTopic,
-        emirate: session.currentEmirate,
-        topicChanged,
-      }
+      memory: { turns: session.topicTurns, topic: session.currentTopic, emirate: session.currentEmirate, topicChanged },
+      confidence,
     });
   } catch (err) {
     console.error('LLM error:', err.message);
@@ -733,11 +690,12 @@ app.post('/api/chat', async (req, res) => {
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`GovMurshid v3.3.2 running at http://localhost:${PORT}`);
+  console.log(`GovMurshid v3.4.0 running at http://localhost:${PORT}`);
   console.log(`LLM: Groq API (llama-3.1-8b-instant)`);
   console.log(`Tool calling: Groq native function calling ✅`);
   console.log(`Multi-turn memory: session-based (${SESSION_MAX_TURNS} turns, 30min TTL) ✅`);
   console.log(`Emirate boost scoring: enabled ✅`);
+  console.log(`Confidence scoring: enabled ✅`);
   console.log(`Arabic support: enabled ✅`);
 });
 
