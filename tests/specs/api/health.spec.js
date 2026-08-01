@@ -41,9 +41,14 @@ test.describe('Health Check API', () => {
     expect(body.memory).toBe('multi-turn');
   });
 
-  test('[TC_H_007] returns policies count as 55', async ({ api }) => {
+  // NOTE: intentionally not hardcoded to a specific number. The exact
+  // policy count changes as policies are added/removed (e.g. Step 2
+  // removes all transport policies), so this test asserts shape/type,
+  // not a magic number that will drift again.
+  test('[TC_H_007] returns policies as a positive number', async ({ api }) => {
     const { body } = await api.getHealth();
-    expect(body.policies).toBe(55);
+    expect(typeof body.policies).toBe('number');
+    expect(body.policies).toBeGreaterThan(0);
   });
 
   test('[TC_H_008] health check responds within 500ms', async ({ api }) => {
