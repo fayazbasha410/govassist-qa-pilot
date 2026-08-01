@@ -79,13 +79,6 @@ setInterval(() => {
 // ─────────────────────────────────────────
 // CONFIDENCE SCORING
 // ─────────────────────────────────────────
-//
-// Scores how confident we are in the RAG answer based on:
-// - topDoc score (how well the best doc matched)
-// - score gap (how much better the top doc is vs second)
-// - emirate match (did we find an emirate-specific policy?)
-//
-// Returns: { level: 'high'|'medium'|'low', label, policyId, reason }
 
 function computeConfidence(docs, query) {
   if (!docs || docs.length === 0) {
@@ -118,6 +111,33 @@ function computeConfidence(docs, query) {
   }
 
   return { level, label, policyId: top.id, reason };
+}
+
+// ─────────────────────────────────────────
+// OUTPUT SANITISER
+// ─────────────────────────────────────────
+// Fix 1: strips any characters outside Arabic Unicode, Latin, digits,
+// standard punctuation and whitespace — catches the Chinese-char
+// hallucination bug (e.g. ل避ance) before it reaches the user.
+
+function sanitiseOutput(text, isArabic) {
+  if (!text) return text;
+
+  if (isArabic) {
+    // Arabic response: keep Arabic script, Latin (for policy IDs like POL-001),
+    // digits, common punctuation, whitespace
+    return text
+      .replace(/[^\u0600-\u06FF\u0020-\u007Ea-zA-Z0-9\s\n\r.,!?;:()\-\[\]\/٪٫٬،؛؟۰-۹]/g, '')
+      .replace(/\s{3,}/g, '\n\n')  // collapse excessive whitespace
+      .trim();
+  } else {
+    // English response: keep Latin, digits, standard punctuation, whitespace
+    // Allow Arabic only for proper nouns inside English answers (e.g. policy titles)
+    return text
+      .replace(/[^\u0000-\u007F\u0600-\u06FF\u00C0-\u024F\s\n\r]/g, '')
+      .replace(/\s{3,}/g, '\n\n')
+      .trim();
+  }
 }
 
 // ─────────────────────────────────────────
@@ -379,7 +399,8 @@ function checkGuardrails(message) {
 const Groq = require('groq-sdk');
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
-async function callOllama(systemPrompt, userMessage, retries = 3) {
+// Fix 2: reduced retries 3→2, added jitter to prevent thundering herd in CI
+async function callOllama(systemPrompt, userMessage, retries = 2) {
   for (let attempt = 1; attempt <= retries; attempt++) {
     try {
       const completion = await groq.chat.completions.create({
@@ -395,8 +416,9 @@ async function callOllama(systemPrompt, userMessage, retries = 3) {
     } catch (err) {
       const isRateLimit = err.status === 429 || err.message?.includes('429');
       if (isRateLimit && attempt < retries) {
-        const waitMs = attempt * 6000;
-        console.log(`⏳ Groq rate limit — waiting ${waitMs / 1000}s (retry ${attempt}/${retries})`);
+        // Jitter prevents parallel CI workers from retrying in lockstep
+        const waitMs = (attempt * 6000) + Math.floor(Math.random() * 2000);
+        console.log(`⏳ Groq rate limit — waiting ${(waitMs/1000).toFixed(1)}s (retry ${attempt}/${retries})`);
         await new Promise(r => setTimeout(r, waitMs));
         continue;
       }
@@ -428,7 +450,7 @@ const TOOL_DEFINITIONS = [
     type: 'function',
     function: {
       name: 'bookAppointment',
-      description: 'Book a government service appointment for a specific service and date.',
+      description: 'Book a government service appointment for a specific service and date. Only use this when the user explicitly asks to book or schedule an appointment — do NOT use for general information questions.',
       parameters: {
         type: 'object',
         properties: {
@@ -444,13 +466,13 @@ const TOOL_DEFINITIONS = [
   }
 ];
 
-async function detectToolIntentWithLLM(message, retries = 3) {
+async function detectToolIntentWithLLM(message, retries = 2) {
   for (let attempt = 1; attempt <= retries; attempt++) {
     try {
       const completion = await groq.chat.completions.create({
         model: 'llama-3.1-8b-instant',
         messages: [
-          { role: 'system', content: 'UAE government services assistant. Use checkFineStatus for vehicle fines, bookAppointment for scheduling. If neither applies, do not call any tool.' },
+          { role: 'system', content: 'UAE government services assistant. Use checkFineStatus ONLY when the user asks to check fines for a specific plate number. Use bookAppointment ONLY when the user explicitly asks to book or schedule an appointment. For all general information questions, do NOT call any tool.' },
           { role: 'user', content: message }
         ],
         tools: TOOL_DEFINITIONS,
@@ -467,7 +489,8 @@ async function detectToolIntentWithLLM(message, retries = 3) {
     } catch (err) {
       const isRateLimit = err.status === 429 || err.message?.includes('429');
       if (isRateLimit && attempt < retries) {
-        await new Promise(r => setTimeout(r, attempt * 6000));
+        const waitMs = (attempt * 6000) + Math.floor(Math.random() * 2000);
+        await new Promise(r => setTimeout(r, waitMs));
         continue;
       }
       console.error('⚠️ Tool detection failed:', err.message);
@@ -480,11 +503,15 @@ async function detectToolIntentWithLLM(message, retries = 3) {
 // SYSTEM PROMPT
 // ─────────────────────────────────────────
 
+// Fix 3: added two consistency instructions
+// (a) always name the responsible authority explicitly — never say "the authority" or "the department"
+// (b) only use tools when user explicitly asks to check a fine or book — general info stays in RAG
 const ACTIVE_SYSTEM_PROMPT = `You are GovMurshid, an AI guide for UAE government services across all seven emirates — Abu Dhabi, Dubai, Sharjah, Ajman, Umm Al Quwain, Ras Al Khaimah, and Fujairah.
 Answer ONLY using the policy information provided below.
 Do NOT add information that is not in the context.
 When an emirate is specified, focus your answer on that emirate's policies specifically.
 Always mention which emirate a rule applies to if it differs across emirates.
+Always name the responsible authority explicitly by its full name (e.g. "Roads and Transport Authority (RTA)", "Ministry of Interior (MOI)", "ICA", "TAMM", "Department of Health — DoH") — never use vague terms like "the authority" or "the department".
 Be concise, helpful, and professional.
 If the answer is not in the context, say so clearly and suggest the user visit the relevant emirate portal.`;
 
@@ -498,12 +525,14 @@ app.get('/favicon.ico', (req, res) => res.status(204).end());
 app.get('/api/health', (req, res) => {
   res.json({
     status: 'ok',
-    version: '3.4.0',
+    version: '3.5.0',
     model: 'groq/llama-3.1-8b-instant',
     name: 'GovMurshid',
     toolCalling: 'native',
     memory: 'session-based',
     confidenceScoring: true,
+    voiceInput: true,
+    outputSanitiser: true,
   });
 });
 
@@ -549,6 +578,8 @@ app.post('/api/chat', async (req, res) => {
       retrievedDocs: [],
       toolUsed: null,
       confidence: null,
+      language: detectArabic(message) ? 'ar' : 'en',
+      memory: null,
     });
   }
 
@@ -579,9 +610,9 @@ app.post('/api/chat', async (req, res) => {
   if (followUp) retrievalMessage = enrichFollowUp(message, session);
 
   // ── 5. Tool intent detection (only if plate/booking keyword present) ──
-  const PLATE_PATTERN   = /\b[A-Z]{1,3}[-\s]?\d{1,5}\b/i;
+  const PLATE_PATTERN    = /\b[A-Z]{1,3}[-\s]?\d{1,5}\b/i;
   const BOOKING_KEYWORDS = ['book', 'appointment', 'schedule', 'reserve', 'slot'];
-  const mightNeedTool   = PLATE_PATTERN.test(message) ||
+  const mightNeedTool    = PLATE_PATTERN.test(message) ||
     BOOKING_KEYWORDS.some(k => message.toLowerCase().includes(k));
 
   const toolIntent = mightNeedTool ? await detectToolIntentWithLLM(message) : null;
@@ -635,6 +666,7 @@ app.post('/api/chat', async (req, res) => {
       retrievedDocs: [],
       toolUsed: null,
       language: isArabic ? 'ar' : 'en',
+      memory: { turns: session.topicTurns, topic: session.currentTopic, emirate: session.currentEmirate, topicChanged },
       confidence: { level: 'low', label: 'Low confidence', policyId: null, reason: 'No matching policies found' },
     });
   }
@@ -664,7 +696,10 @@ app.post('/api/chat', async (req, res) => {
 
   // ── 9. LLM call ───────────────────────────────────────────────────
   try {
-    const llmReply = await callOllama(systemPrompt, message);
+    const rawReply = await callOllama(systemPrompt, message);
+
+    // Fix 1: sanitise output — strips non-Arabic/non-Latin chars (fixes Chinese char hallucination bug)
+    const llmReply = sanitiseOutput(rawReply, isArabic);
 
     addToHistory(session, 'user', message);
     addToHistory(session, 'assistant', llmReply);
@@ -678,9 +713,24 @@ app.post('/api/chat', async (req, res) => {
       memory: { turns: session.topicTurns, topic: session.currentTopic, emirate: session.currentEmirate, topicChanged },
       confidence,
     });
+
   } catch (err) {
+    // Fix 4: always return full response shape on error — prevents TypeError crashes in tests
     console.error('LLM error:', err.message);
-    res.status(500).json({ error: 'LLM unavailable', detail: err.message });
+    const fallbackReply = isArabic
+      ? 'عذراً، المساعد غير متاح مؤقتاً. يرجى المحاولة مرة أخرى.'
+      : 'Sorry, the assistant is temporarily unavailable. Please try again.';
+    res.status(500).json({
+      error: 'LLM unavailable',
+      detail: err.message,
+      reply: fallbackReply,
+      guardrail: { triggered: false },
+      retrievedDocs: [],
+      toolUsed: null,
+      language: isArabic ? 'ar' : 'en',
+      memory: { turns: session.topicTurns, topic: session.currentTopic, emirate: session.currentEmirate, topicChanged: false },
+      confidence: null,
+    });
   }
 });
 
@@ -690,12 +740,14 @@ app.post('/api/chat', async (req, res) => {
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`GovMurshid v3.4.0 running at http://localhost:${PORT}`);
+  console.log(`GovMurshid v3.5.0 running at http://localhost:${PORT}`);
   console.log(`LLM: Groq API (llama-3.1-8b-instant)`);
   console.log(`Tool calling: Groq native function calling ✅`);
   console.log(`Multi-turn memory: session-based (${SESSION_MAX_TURNS} turns, 30min TTL) ✅`);
   console.log(`Emirate boost scoring: enabled ✅`);
   console.log(`Confidence scoring: enabled ✅`);
+  console.log(`Voice input: enabled ✅`);
+  console.log(`Output sanitiser: enabled ✅`);
   console.log(`Arabic support: enabled ✅`);
 });
 
