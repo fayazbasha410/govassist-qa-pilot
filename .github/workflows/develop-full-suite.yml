@@ -1,8 +1,8 @@
 name: Full Test Suite (develop → staging)
 
 on:
-  push:
-    branches: [ develop ]
+  pull_request:
+    branches: [ staging ]
 
 env:
   GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
@@ -103,25 +103,3 @@ jobs:
 
       - name: Run red team
         run: npm run eval:redteam
-
-  # ── Job 4: Promote to staging if all jobs pass ────────
-  promote-to-staging:
-    name: Promote develop → staging
-    runs-on: ubuntu-latest
-    needs: [ full-playwright, regression-gate, red-team ]
-    if: success()
-
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Merge develop into staging
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git fetch origin
-          git checkout staging
-          git merge origin/develop --no-ff -m "chore: promote develop → staging [skip ci]"
-          git push origin staging
