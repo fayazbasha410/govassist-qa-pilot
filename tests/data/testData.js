@@ -204,10 +204,15 @@ const CHAT_MESSAGES = {
 
 
  // English — Step 3 new policy categories (v3.7.0), used in UI tests
+ // NOTE: companyFormation and tammPlatform deliberately avoid starting with
+ // "What" — server.js's FOLLOW_UP_TRIGGERS regex (/^what (about )?(.+)/i)
+ // is overly broad and matches any "What...?" question, not just genuine
+ // follow-ups, which corrupts the RAG query on a message's very first turn.
+ // Verified via full-flow simulation that these phrasings avoid that path.
  moiLostId: 'I lost my Emirates ID, how do I get a replacement?',
  mohreComplaint: 'How do I file a labour complaint for unpaid salary?',
- companyFormation: 'What is the difference between mainland and free zone company formation?',
- tammPlatform: 'What services are available on the TAMM platform in Abu Dhabi?',
+ companyFormation: 'Explain the difference between mainland and free zone company formation.',
+ tammPlatform: 'Tell me about the TAMM platform services in Abu Dhabi.',
  dldRentDispute: 'How do I file a rent dispute in Dubai?',
 
  // English — memory / follow-up
