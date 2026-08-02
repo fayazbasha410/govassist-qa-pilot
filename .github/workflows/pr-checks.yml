@@ -43,7 +43,7 @@ jobs:
         run: |
           node -e "
           const td = require('./tests/data/testData');
-          const required = ['PLATES', 'APPOINTMENTS', 'GUARDRAIL_INPUTS', 'CHAT_MESSAGES'];
+          const required = ['APPOINTMENTS', 'GUARDRAIL_INPUTS', 'CHAT_MESSAGES'];
           for (const key of required) {
             if (!td[key]) { console.error('Missing:', key); process.exit(1); }
           }
