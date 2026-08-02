@@ -207,6 +207,46 @@ test.describe('GovMurshid Chat UI', () => {
  });
 
 
+ // ── Step 3 New Policy Categories (v3.7.0) ────────────────────────────────────
+ // Verifies the new policies are actually reachable through the real chat
+ // flow, not just via the /api/policies/search endpoint. Assertions check
+ // the RAG tag cites the expected policy ID directly — this avoids any
+ // dependency on locale_en.json having keys for these new topics.
+ test.describe('New policy categories (Step 3)', () => {
+
+   test('[TC_UI_032] MOI lost Emirates ID question cites POL-056', async ({ page }) => {
+     await chatPage.input.typeAndSend(CHAT_MESSAGES.moiLostId);
+     const tag = await chatPage.messages.waitForRagTag();
+     await expect(tag).toContainText('POL-056');
+   });
+
+   test('[TC_UI_033] MOHRE labour complaint question cites POL-057', async ({ page }) => {
+     await chatPage.input.typeAndSend(CHAT_MESSAGES.mohreComplaint);
+     const tag = await chatPage.messages.waitForRagTag();
+     await expect(tag).toContainText('POL-057');
+   });
+
+   test('[TC_UI_034] company formation question cites POL-063', async ({ page }) => {
+     await chatPage.input.typeAndSend(CHAT_MESSAGES.companyFormation);
+     const tag = await chatPage.messages.waitForRagTag();
+     await expect(tag).toContainText('POL-063');
+   });
+
+   test('[TC_UI_035] TAMM platform question cites POL-065', async ({ page }) => {
+     await chatPage.input.typeAndSend(CHAT_MESSAGES.tammPlatform);
+     const tag = await chatPage.messages.waitForRagTag();
+     await expect(tag).toContainText('POL-065');
+   });
+
+   test('[TC_UI_036] Dubai rent dispute question cites POL-066', async ({ page }) => {
+     await chatPage.input.typeAndSend(CHAT_MESSAGES.dldRentDispute);
+     const tag = await chatPage.messages.waitForRagTag();
+     await expect(tag).toContainText('POL-066');
+   });
+
+ });
+
+
  // ── Guardrails UI ────────────────────────────────────────────────────────────
  test.describe('Guardrails', () => {
 

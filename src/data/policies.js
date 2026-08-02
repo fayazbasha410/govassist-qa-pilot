@@ -1,3 +1,6 @@
+
+
+
 // ─────────────────────────────────────────────────────────────────────────────
 // GovMurshid — UAE Government Policy Documents
 // All 7 Emirates | English + Arabic
@@ -1837,6 +1840,610 @@ License is valid for 1 year and must be renewed annually.
 - FFZA: من 8,000 إلى 15,000 درهم سنوياً
 
 الرخصة سارية لمدة سنة وتُجدَّد سنوياً.`
+  },
+
+  // ─── STEP 3 ADDITIONS (v3.7.0) — filling non-transport coverage gaps ─────
+
+  {
+    id: 'POL-056',
+    emirate: 'All UAE',
+    category: 'identity',
+    title: 'MOI Services — Passport Loss, Emirates ID Replacement',
+    content: `The Ministry of Interior (MOI) and the Federal Authority for Identity, Citizenship, Customs and Port Security (ICP) handle reporting and replacement for lost or damaged identity documents across all UAE emirates.
+
+Lost or stolen passport:
+- Report immediately at the nearest police station (any emirate) to obtain a police report — this is required before replacement can be requested.
+- Expatriates: contact your home country's embassy or consulate in the UAE to issue a replacement or emergency travel document.
+- UAE nationals: apply for a replacement passport via ICP Smart Services (icp.gov.ae) or the UAE Pass app, using the police report as supporting documentation.
+
+Lost or damaged Emirates ID:
+- Report loss at any ICP typing/service center or via icp.gov.ae — no police report required for the Emirates ID itself, though one may be requested for accompanying lost items.
+- Apply for a replacement card via ICP Smart Services, TAMM (Abu Dhabi residents), or the ICP app.
+- Replacement fee: approximately AED 300 (standard replacement), reduced fees may apply for reported theft with a police report.
+- A temporary certificate can typically be issued same-day while the physical card is being reprinted (processing: 3–5 working days).
+
+Required documents (replacement, either document):
+- Police report (for theft, or where applicable)
+- Valid UAE residence visa (expatriates)
+- Recent passport-size photograph
+
+---
+
+خدمات وزارة الداخلية — فقدان جواز السفر واستبدال الهوية الإماراتية
+
+تتولى وزارة الداخلية والهيئة الاتحادية للهوية والجنسية والجمارك وأمن المنافذ (ICP) التعامل مع فقدان أو تلف الوثائق الرسمية في جميع الإمارات.
+
+فقدان أو سرقة جواز السفر:
+- الإبلاغ فوراً في أقرب مركز شرطة للحصول على محضر رسمي، وهو مطلوب قبل طلب الاستبدال.
+- المقيمون الأجانب: التواصل مع سفارة أو قنصلية بلدهم في الإمارات لإصدار بديل أو وثيقة سفر طارئة.
+- المواطنون: التقديم لاستبدال الجواز عبر ICP Smart Services أو تطبيق UAE Pass مع إرفاق محضر الشرطة.
+
+فقدان أو تلف الهوية الإماراتية:
+- الإبلاغ في أي مركز طباعة تابع لـ ICP أو عبر icp.gov.ae؛ لا يُشترط محضر شرطة للبطاقة نفسها في العادة.
+- التقديم للاستبدال عبر ICP Smart Services أو منصة تام (لمقيمي أبوظبي) أو تطبيق ICP.
+- رسوم الاستبدال: نحو 300 درهم، وقد تُخفَّض في حالات السرقة المبلَّغ عنها بمحضر شرطة.
+- يمكن إصدار شهادة مؤقتة في نفس اليوم أثناء طباعة البطاقة (المعالجة: 3-5 أيام عمل).
+
+المستندات المطلوبة:
+- محضر الشرطة (عند السرقة، أو حسب الحالة)
+- تأشيرة الإقامة السارية (للمقيمين الأجانب)
+- صورة شخصية حديثة`
+  },
+
+  {
+    id: 'POL-057',
+    emirate: 'All UAE',
+    category: 'labour',
+    title: 'MOHRE — Labour Complaints, End of Service Disputes, Salary Protection',
+    content: `The Ministry of Human Resources and Emiratisation (MOHRE) handles private sector labour disputes, wage complaints, and end of service disputes across all UAE emirates. (Public sector and free zone employees are generally covered by separate authorities — check your specific free zone.)
+
+Filing a labour complaint:
+- Call the MOHRE hotline: 80060
+- Submit via MOHRE app or website (mohre.gov.ae)
+- Visit a Tas-heel or Amer service center in person
+
+Common complaint types:
+- Unpaid or delayed wages
+- Non-payment of end of service gratuity
+- Unlawful termination
+- Contract violations (working conditions, leave entitlements)
+
+Process:
+1. MOHRE first attempts mediation between employer and employee (typically within 7–14 days).
+2. If mediation fails, MOHRE refers the case to the Labour Court for a binding judicial decision.
+3. Cases are generally free to file for the employee; MOHRE does not charge complaint filing fees.
+
+Wage Protection System (WPS):
+- All private sector employers must pay salaries via WPS, a system that verifies employees are paid on time and in full through registered UAE banks or exchange houses.
+- Employers with repeated WPS violations face fines, work permit suspension, and referral to MOHRE for further action.
+- Employees whose employer stops WPS payments should file a complaint immediately — this is treated as a priority case.
+
+---
+
+وزارة الموارد البشرية والتوطين — شكاوى العمل ونزاعات نهاية الخدمة وحماية الأجور
+
+تتولى وزارة الموارد البشرية والتوطين (MOHRE) التعامل مع نزاعات العمل في القطاع الخاص عبر جميع الإمارات. (موظفو القطاع العام والمناطق الحرة يخضعون عادةً لجهات منفصلة.)
+
+تقديم شكوى عمالية:
+- الاتصال بالخط الساخن: 80060
+- التقديم عبر تطبيق أو موقع الوزارة (mohre.gov.ae)
+- زيارة أحد مراكز تسهيل أو أمر
+
+أنواع الشكاوى الشائعة:
+- تأخر أو عدم دفع الرواتب
+- عدم دفع مكافأة نهاية الخدمة
+- الفصل التعسفي
+- مخالفات العقد (ظروف العمل، استحقاقات الإجازات)
+
+الإجراءات:
+1. تحاول الوزارة الوساطة بين الطرفين أولاً (خلال 7-14 يوماً عادةً).
+2. عند فشل الوساطة، تحال القضية إلى محكمة العمل لإصدار حكم ملزم.
+3. تقديم الشكوى مجاني للموظف في العادة.
+
+نظام حماية الأجور (WPS):
+- يجب على جميع أصحاب العمل في القطاع الخاص دفع الرواتب عبر نظام حماية الأجور، الذي يتحقق من دفع الرواتب في موعدها وبالكامل عبر بنوك أو مؤسسات صرافة مسجَّلة.
+- المخالفات المتكررة تؤدي لغرامات وتعليق تصاريح العمل وإحالة الشركة للوزارة.
+- على الموظف الذي يتوقف صرف راتبه عبر WPS تقديم شكوى فوراً؛ تُعامَل هذه الحالات كأولوية.`
+  },
+
+  {
+    id: 'POL-058',
+    emirate: 'All UAE',
+    category: 'social',
+    title: 'Zakat Fund — Eligibility and Application Process',
+    content: `The UAE Zakat Fund (zakatfund.gov.ae), under the General Authority of Islamic Affairs and Endowments, both collects Zakat from donors and distributes it to eligible beneficiaries.
+
+Eligibility to receive Zakat support (the eight categories recognized under Islamic law, as administered by the Zakat Fund):
+- The poor (Al-Fuqara) and needy (Al-Masakin) — verified through income and asset assessment
+- Zakat administrators
+- Those whose hearts are to be reconciled
+- Freeing captives / those in debt bondage (historical category, rarely applied in UAE context)
+- Debtors unable to repay essential debts
+- In the cause of Allah (community welfare projects)
+- Stranded travelers in genuine need
+
+How to apply for support:
+- Submit an application via the Zakat Fund website (zakatfund.gov.ae) or in person at its Abu Dhabi or Dubai offices.
+- Required documents: Emirates ID, proof of income (or lack thereof), family book (for UAE nationals), and supporting documentation for the specific hardship (medical bills, debt statements, etc.).
+- Applications are reviewed by a committee; approval and disbursement timelines vary by case complexity.
+
+How to pay Zakat (for donors):
+- Calculate 2.5% of eligible zakatable assets (savings, gold, business inventory) held for one full lunar (Hijri) year above the nisab threshold.
+- Pay via the Zakat Fund portal, bank transfer, or in person.
+- The Fund also accepts Zakat Al-Fitr (obligatory pre-Eid charity) seasonally around Ramadan.
+
+For broader humanitarian and charitable donations outside Zakat specifically, the Emirates Red Crescent (emiratesrc.ae) is the other major official channel.
+
+---
+
+صندوق الزكاة — الأهلية وإجراءات التقديم
+
+يتولى صندوق الزكاة الإماراتي (zakatfund.gov.ae)، التابع للهيئة العامة للشؤون الإسلامية والأوقاف، جمع الزكاة وتوزيعها على المستحقين.
+
+فئات الاستحقاق (الأصناف الثمانية الشرعية كما يديرها الصندوق):
+- الفقراء والمساكين — يُتحقق منهم عبر تقييم الدخل والأصول
+- العاملون على الزكاة
+- المؤلفة قلوبهم
+- في الرقاب (فئة تاريخية نادرة التطبيق في السياق الإماراتي)
+- الغارمون (المدينون غير القادرين على السداد)
+- في سبيل الله (مشاريع الرفاه المجتمعي)
+- ابن السبيل (المسافر المنقطع المحتاج)
+
+طريقة التقديم للحصول على الدعم:
+- تقديم طلب عبر موقع صندوق الزكاة أو حضورياً في مكاتبه بأبوظبي أو دبي.
+- المستندات المطلوبة: الهوية الإماراتية، إثبات الدخل (أو انعدامه)، خلاصة القيد (للمواطنين)، ومستندات داعمة للحالة (فواتير طبية، كشوف ديون، إلخ).
+- تُراجَع الطلبات من قِبَل لجنة، وتختلف مدة الموافقة والصرف حسب تعقيد الحالة.
+
+طريقة دفع الزكاة (للمتبرعين):
+- تُحسب بنسبة 2.5% من الأصول الزكوية المؤهلة المحتفظ بها لسنة هجرية كاملة فوق حد النصاب.
+- الدفع عبر بوابة الصندوق أو التحويل البنكي أو حضورياً.
+- يقبل الصندوق أيضاً زكاة الفطر موسمياً حول شهر رمضان.
+
+للتبرعات الإنسانية والخيرية الأوسع خارج نطاق الزكاة تحديداً، يُعد الهلال الأحمر الإماراتي (emiratesrc.ae) القناة الرسمية الكبرى الأخرى.`
+  },
+
+  {
+    id: 'POL-059',
+    emirate: 'All UAE',
+    category: 'social',
+    title: 'Support for People of Determination and Widows — Eligibility Deep Dive',
+    content: `This expands on eligibility specifics for two of the UAE's core social support categories: People of Determination (individuals with disabilities) and widows.
+
+People of Determination — benefits in detail:
+- Determination Card (Bata'qa Al Himma): free issuance via Ministry of Community Development (mocd.gov.ae); required to access most benefits below.
+- Financial assistance: monthly stipends for eligible UAE national families, amount varies by assessed need and is reviewed by MOCD or the relevant emirate authority (e.g., DCD in Dubai, DCD in Abu Dhabi).
+- Free or subsidized assistive devices (wheelchairs, hearing aids) through MOCD-affiliated centers.
+- Priority processing and free/discounted parking, government service queues, and public transport (where applicable).
+- Employment: 1% mandatory private-sector employment quota (Federal Law No. 29 of 2006) applies to companies with 50+ employees; MOHRE monitors compliance.
+- Education: inclusive education entitlement in public schools; private schools must reasonably accommodate under KHDA/ADEK/relevant authority inclusion policies.
+
+Widows — support eligibility:
+- UAE national widows may apply for social welfare support through their emirate's social/community development authority (DCD Abu Dhabi, CDA Dubai, or the equivalent MOCD-affiliated body in other emirates).
+- Eligibility generally requires: UAE nationality, proof of spouse's death (death certificate), and an income/asset assessment showing financial need.
+- Support can include a monthly stipend, housing assistance, and priority access to Sheikh Zayed Housing Programme benefits (za.gov.ae) for eligible national widows.
+- Widows of deceased government/military personnel may additionally be eligible for a separate pension continuation through GPSSA or the relevant emirate pension authority.
+
+Apply via: Ministry of Community Development (mocd.gov.ae) at the federal level, or your emirate's local social/community development authority.
+
+---
+
+دعم ذوي الهمم والأرامل — تفاصيل الأهلية
+
+هذه السياسة تتوسع في تفاصيل أهلية فئتين أساسيتين من فئات الدعم الاجتماعي في الإمارات: ذوو الهمم والأرامل.
+
+ذوو الهمم — المزايا بالتفصيل:
+- بطاقة الهمة: تصدر مجاناً عبر وزارة تنمية المجتمع (mocd.gov.ae) وهي مطلوبة للوصول لمعظم المزايا أدناه.
+- المساعدة المالية: مخصصات شهرية للأسر الإماراتية المؤهلة، يختلف المبلغ حسب تقييم الاحتياج.
+- أجهزة مساعدة مجانية أو مدعومة (كراسي متحركة، سماعات) عبر مراكز تابعة لوزارة تنمية المجتمع.
+- أولوية في الإجراءات ومواقف مجانية أو مخفضة وأولوية في طوابير الخدمات الحكومية.
+- التوظيف: حصة إلزامية 1% في القطاع الخاص للشركات التي لديها 50 موظفاً فأكثر.
+- التعليم: حق التعليم الدامج في المدارس الحكومية، والمدارس الخاصة ملزَمة بالتكيف وفق سياسات الجهات التعليمية المعنية.
+
+الأرامل — أهلية الدعم:
+- يمكن للأرملة الإماراتية التقديم للدعم الاجتماعي عبر جهة التنمية المجتمعية في إمارتها.
+- تشترط الأهلية عادةً: الجنسية الإماراتية، إثبات وفاة الزوج (شهادة الوفاة)، وتقييم دخل/أصول يُظهر الحاجة المالية.
+- قد يشمل الدعم مخصصاً شهرياً ومساعدة سكنية وأولوية في برنامج الشيخ زايد للإسكان (za.gov.ae) للأرامل المواطنات المؤهلات.
+- أرامل منتسبي القطاع الحكومي/العسكري المتوفين قد يستحققن استمرارية معاش منفصلة عبر GPSSA أو جهة التقاعد في الإمارة.
+
+التقديم عبر: وزارة تنمية المجتمع على المستوى الاتحادي، أو جهة التنمية المجتمعية في الإمارة.`
+  },
+
+  {
+    id: 'POL-060',
+    emirate: 'All UAE',
+    category: 'utilities',
+    title: 'Telecom Connection — Etisalat and du Setup',
+    content: `The UAE has two licensed telecom operators: Etisalat by e& (etisalat.ae) and du (du.ae). Both offer mobile, home internet, and TV services across all seven emirates.
+
+New mobile line (postpaid or prepaid):
+- Visit an Etisalat or du store, or apply online/via app.
+- Required: Emirates ID (or passport + visa for new residents without an Emirates ID yet — a temporary line can sometimes be issued).
+- Prepaid SIMs are available with minimal documentation at airports, malls, and kiosks.
+- Postpaid plans require a credit check and, for expatriates, an active residence visa.
+
+Home internet and TV (fiber/broadband):
+- Apply via etisalat.ae or du.ae, or visit a store.
+- Required: Emirates ID, valid tenancy contract (Ejari for Dubai, Tawtheeq for Abu Dhabi, or the equivalent municipality-attested contract elsewhere).
+- Installation is typically scheduled within 1–5 working days depending on building readiness (existing fiber infrastructure vs. new installation).
+- A security deposit or first-month advance payment may apply for expatriates without a prior UAE credit history.
+
+Which operator serves which area:
+- Both operators have overlapping coverage in Dubai and Abu Dhabi.
+- In some newer or more remote developments, only one operator may have infrastructure — check availability by building/community before signing a tenancy agreement if connectivity is a priority.
+
+Cancelling or transferring service: contact the provider's customer service (Etisalat: 101, du: 155) or visit a store; early termination of a contracted plan may carry a fee.
+
+---
+
+توصيل خدمات الاتصالات — إعداد اتصالات ودو
+
+تعمل في الإمارات شركتا اتصالات مرخّصتان: اتصالات by e& (etisalat.ae) ودو (du.ae)، وتقدمان خدمات الجوال والإنترنت المنزلي والتلفزيون في جميع الإمارات السبع.
+
+خط جوال جديد (فوترة لاحقة أو مسبقة الدفع):
+- زيارة أحد فروع اتصالات أو دو، أو التقديم عبر الإنترنت أو التطبيق.
+- المطلوب: الهوية الإماراتية (أو جواز السفر والتأشيرة للمقيمين الجدد الذين لم يحصلوا على الهوية بعد).
+- شرائح الدفع المسبق متاحة بمستندات بسيطة في المطارات والمولات والأكشاك.
+- باقات الفوترة اللاحقة تتطلب فحص ائتمان، وللمقيمين الأجانب تأشيرة إقامة سارية.
+
+الإنترنت المنزلي والتلفزيون (الألياف الضوئية):
+- التقديم عبر etisalat.ae أو du.ae أو زيارة فرع.
+- المطلوب: الهوية الإماراتية، وعقد إيجار ساري (إيجاري لدبي، توثيق لأبوظبي، أو ما يعادلهما في الإمارات الأخرى).
+- التركيب عادةً خلال 1-5 أيام عمل حسب جاهزية البناية.
+- قد يُطلب مبلغ تأمين أو دفعة الشهر الأول مقدماً للمقيمين الأجانب الجدد بدون سجل ائتماني سابق في الإمارات.
+
+أي مشغل يخدم أي منطقة:
+- تتداخل التغطية بين المشغلين في دبي وأبوظبي.
+- في بعض المناطق الجديدة أو النائية، قد تتوفر بنية تحتية لمشغل واحد فقط؛ يُنصح بالتحقق قبل توقيع عقد الإيجار إذا كانت جودة الاتصال أولوية.
+
+إلغاء أو نقل الخدمة: التواصل مع خدمة العملاء (اتصالات: 101، دو: 155) أو زيارة فرع؛ قد يترتب رسم على الإنهاء المبكر للباقات التعاقدية.`
+  },
+
+  {
+    id: 'POL-061',
+    emirate: 'All UAE',
+    category: 'healthcare',
+    title: 'Medical Fitness Certificate for Employment',
+    content: `A medical fitness certificate is also commonly required as a pre-employment or occupational health requirement, separate from (though sometimes combined with) the general residence visa medical fitness test.
+
+When employment-specific medical fitness is required:
+- Certain regulated professions (healthcare workers, food handlers, aviation staff, offshore/oil and gas workers) require a role-specific occupational health clearance in addition to the standard visa medical test.
+- Some employers require a general fitness-to-work certificate as part of onboarding, particularly for physically demanding roles (construction, manufacturing).
+
+Standard visa-linked medical test (see also: Medical Fitness Certificate, POL-016) covers:
+- Blood test (HIV, Hepatitis B and C, TB screening)
+- Chest X-ray
+- General physical examination
+
+Employment-specific additions may include:
+- Drug and alcohol screening
+- Vision and hearing tests (for driving-adjacent, machinery, or aviation roles)
+- Vaccination verification (particularly for healthcare and food service roles)
+- Psychometric or fitness assessments (for specific high-risk occupations)
+
+Where to apply:
+- The same MOH-, DHA-, or DoH-approved medical fitness centers used for visa purposes typically offer employment-specific add-on packages — ask the center directly which tests your employer or profession requires.
+- Some employers, particularly larger corporations and government entities, direct new hires to a specific approved clinic.
+
+Fee: Employment-specific add-ons typically cost AED 100–400 on top of the standard visa medical fitness fee (AED 220–320), depending on which additional tests are required.
+
+Results and confidentiality: Employment-related results are typically shared with the employer's HR/occupational health function only to the extent needed to confirm fitness for the role — not full medical details, per UAE health data privacy regulations.
+
+---
+
+شهادة اللياقة الطبية للتوظيف
+
+تُشترط شهادة اللياقة الطبية أحياناً كمتطلب توظيف أو صحة مهنية، منفصلة عن (وقد تُدمج مع) فحص اللياقة العام لتأشيرة الإقامة.
+
+متى تُشترط اللياقة الطبية الخاصة بالتوظيف:
+- بعض المهن المنظمة (العاملون الصحيون، مناولو الأغذية، طاقم الطيران، العاملون في النفط والغاز البحري) تتطلب فحصاً مهنياً إضافياً.
+- بعض أصحاب العمل يشترطون شهادة لياقة عامة للعمل كجزء من التعيين، خصوصاً للأدوار البدنية الشاقة.
+
+الفحص القياسي المرتبط بالتأشيرة (راجع أيضاً: شهادة اللياقة الطبية، POL-016) يشمل:
+- تحليل دم (فيروس نقص المناعة، التهاب الكبد B وC، السل)
+- أشعة الصدر
+- فحص طبي عام
+
+إضافات خاصة بالتوظيف قد تشمل:
+- فحص المخدرات والكحول
+- فحوصات النظر والسمع (للأدوار المرتبطة بالقيادة أو الآلات أو الطيران)
+- التحقق من التطعيمات (خصوصاً للعاملين الصحيين وفي الأغذية)
+- تقييمات نفسية أو بدنية (لمهن عالية الخطورة محددة)
+
+أماكن التقديم: نفس المراكز المعتمدة من وزارة الصحة أو DHA أو DoH المستخدمة لأغراض التأشيرة، تقدم عادة باقات إضافية خاصة بالتوظيف.
+
+الرسوم: تتراوح الإضافات الخاصة بالتوظيف بين 100 و400 درهم فوق رسوم اللياقة القياسية (220-320 درهم).`
+  },
+
+  {
+    id: 'POL-062',
+    emirate: 'All UAE',
+    category: 'identity',
+    title: 'Death Certificate Registration and Attestation',
+    content: `Death certificates in the UAE must be registered before a body can be released for burial or repatriation, and before related legal matters (inheritance, insurance claims, visa cancellation) can proceed.
+
+Registration process:
+- Deaths occurring in a hospital: the hospital issues an initial death notification, which is then registered with the relevant health authority (DHA for Dubai, DoH for Abu Dhabi, Ministry of Health for other emirates).
+- Deaths outside a hospital (including accidents): require police involvement and, in some cases, forensic examination before a death certificate can be issued.
+- The death must typically be registered within 48 hours.
+
+Where to register:
+- Abu Dhabi: SEHA hospitals or via TAMM platform
+- Dubai: Dubai Health Authority (DHA) facilities
+- Other emirates: Ministry of Health hospital or health center where the death occurred, or was confirmed
+
+Required documents:
+- Hospital or police death notification
+- Deceased's passport and Emirates ID
+- Applicant's (next of kin/sponsor's) Emirates ID and relationship documentation
+
+Attestation for use abroad:
+- For expatriates whose death certificate needs to be used in their home country (inheritance, insurance, repatriation), the certificate must be attested by:
+  1. UAE Ministry of Foreign Affairs
+  2. The deceased's home country embassy in the UAE
+  3. Possibly the home country's own Ministry of Foreign Affairs upon arrival, depending on that country's requirements
+
+Related next steps after registration:
+- Visa cancellation: the sponsor must cancel the deceased's residence visa via ICP/GDRFA.
+- Repatriation of remains: requires NOC from police (for non-natural deaths) and coordination with the airline and the deceased's embassy.
+- Local burial: requires a burial permit from the municipality, in addition to the death certificate.
+
+---
+
+تسجيل شهادة الوفاة وتوثيقها
+
+يجب تسجيل شهادة الوفاة في الإمارات قبل الإفراج عن الجثمان للدفن أو الترحيل، وقبل متابعة الأمور القانونية المرتبطة (الميراث، مطالبات التأمين، إلغاء التأشيرة).
+
+إجراءات التسجيل:
+- الوفاة داخل المستشفى: يصدر المستشفى إشعاراً أولياً يُسجَّل لدى الجهة الصحية المعنية (DHA لدبي، دائرة الصحة لأبوظبي، وزارة الصحة لباقي الإمارات).
+- الوفاة خارج المستشفى (بما فيها الحوادث): تتطلب تدخل الشرطة وأحياناً فحصاً جنائياً قبل إصدار الشهادة.
+- يجب التسجيل عادة خلال 48 ساعة.
+
+أماكن التسجيل:
+- أبوظبي: مستشفيات صحة أو عبر منصة تام
+- دبي: منشآت هيئة الصحة بدبي
+- باقي الإمارات: مستشفى أو مركز صحي تابع لوزارة الصحة حيث وقعت الوفاة
+
+المستندات المطلوبة:
+- إشعار الوفاة من المستشفى أو الشرطة
+- جواز سفر المتوفى وهويته الإماراتية
+- هوية مقدم الطلب (أقرب الأقارب/الكفيل) ومستندات إثبات القرابة
+
+التوثيق للاستخدام خارج الإمارات:
+- لتوثيق شهادة وفاة مقيم أجنبي لاستخدامها في بلده (الميراث، التأمين، الترحيل): وزارة الخارجية الإماراتية، ثم سفارة بلد المتوفى في الإمارات، وربما وزارة خارجية البلد الأصلي عند الوصول.
+
+خطوات لاحقة بعد التسجيل:
+- إلغاء التأشيرة: يجب على الكفيل إلغاء تأشيرة إقامة المتوفى عبر ICP/GDRFA.
+- ترحيل الجثمان: يتطلب عدم ممانعة من الشرطة (للوفيات غير الطبيعية) والتنسيق مع شركة الطيران والسفارة.
+- الدفن المحلي: يتطلب تصريح دفن من البلدية بالإضافة إلى شهادة الوفاة.`
+  },
+
+  {
+    id: 'POL-063',
+    emirate: 'All UAE',
+    category: 'business',
+    title: 'Company Formation — Mainland vs Free Zone',
+    content: `Setting up a business in the UAE means choosing between mainland and free zone jurisdictions — the choice affects ownership rules, where you can operate, and licensing authority.
+
+Mainland companies:
+- Licensed by each emirate's Department of Economic Development (DED / ADDED / SEDD / etc.) — see the relevant emirate-specific trade license policy for details.
+- Since 2021 reforms, 100% foreign ownership is permitted for most commercial and industrial activities (some strategic sectors still require a UAE national partner or agent).
+- Can trade directly anywhere in the UAE mainland market and bid on government contracts without a local distributor.
+- Generally requires a physical office lease (Ejari/Tawtheeq registered) in the emirate of licensing.
+
+Free zone companies:
+- Each free zone (e.g., Dubai Multi Commodities Centre — DMCC, Dubai Internet City, Sharjah's SHAMS, RAKEZ, Abu Dhabi's Masdar City / ADGM) has its own licensing authority, independent of the DED.
+- 100% foreign ownership as standard, with full repatriation of profits and capital.
+- Cannot trade directly with the UAE mainland market without appointing a local distributor/agent or setting up a separate mainland branch — free zone companies primarily serve international trade or clients within the same/other free zones.
+- Often offers lower setup costs, flexi-desk/shared office options (no dedicated physical office required for some license types), and 0% corporate tax within qualifying free zone activities under current UAE Corporate Tax rules (subject to conditions — verify current Federal Tax Authority guidance).
+
+Choosing between them — general guidance:
+- Selling primarily within the UAE, need government contracts, or want retail/physical presence anywhere in the country → mainland is usually the better fit.
+- Import/export, international consulting/services, or industry-specific hub benefits (media, tech, commodities) → free zone is often more cost-effective and faster to set up.
+
+Registration steps (general, both types):
+1. Choose and reserve a trade name.
+2. Select business activity and legal structure (LLC, sole establishment, branch, etc.).
+3. Obtain initial approval from the licensing authority.
+4. Secure office/facility (physical or flexi-desk depending on license type).
+5. Submit final documents and pay license fees.
+6. Obtain the trade license, then proceed to visa processing for owners/employees if needed.
+
+---
+
+تأسيس الشركات — البر الرئيسي مقابل المنطقة الحرة
+
+يتطلب تأسيس شركة في الإمارات الاختيار بين الترخيص في البر الرئيسي أو منطقة حرة، وهو اختيار يؤثر على قواعد الملكية ونطاق العمل والجهة المرخِّصة.
+
+شركات البر الرئيسي:
+- تُرخَّص عبر دائرة التنمية الاقتصادية في كل إمارة.
+- منذ إصلاحات 2021، يُسمح بالملكية الأجنبية الكاملة (100%) لمعظم الأنشطة التجارية والصناعية.
+- يمكنها التعامل مباشرة في أي مكان بسوق البر الرئيسي والتقدم للعقود الحكومية دون موزع محلي.
+- تتطلب عادة عقد إيجار مكتب فعلي (مسجَّل في إيجاري أو توثيق) في إمارة الترخيص.
+
+شركات المناطق الحرة:
+- لكل منطقة حرة (مثل DMCC، مدينة دبي للإنترنت، شمس بالشارقة، RAKEZ، مصدر سيتي/ADGM بأبوظبي) جهة ترخيص مستقلة خاصة بها.
+- ملكية أجنبية كاملة كمعيار قياسي، مع حرية كاملة لتحويل الأرباح ورأس المال.
+- لا يمكنها التعامل مباشرة مع سوق البر الرئيسي دون تعيين موزع/وكيل محلي أو تأسيس فرع منفصل في البر الرئيسي.
+- غالباً ما توفر تكاليف تأسيس أقل، وخيارات مكتب مرن دون الحاجة لمكتب فعلي مخصص لبعض أنواع التراخيص.
+
+اختيار النوع الأنسب — إرشادات عامة:
+- البيع بشكل أساسي داخل الإمارات، أو الحاجة لعقود حكومية، أو تواجد تجزئة فعلي في أي مكان بالدولة ← البر الرئيسي عادة الأنسب.
+- الاستيراد/التصدير، الاستشارات/الخدمات الدولية، أو مزايا القطاعات المتخصصة ← المنطقة الحرة غالباً أوفر وأسرع تأسيساً.
+
+خطوات التسجيل (عامة لكلا النوعين):
+1. اختيار وحجز الاسم التجاري.
+2. تحديد النشاط التجاري والهيكل القانوني.
+3. الحصول على الموافقة الأولية من جهة الترخيص.
+4. تأمين المكتب أو المنشأة.
+5. تقديم المستندات النهائية ودفع رسوم الترخيص.
+6. الحصول على الرخصة التجارية، ثم متابعة إجراءات التأشيرات إذا لزم.`
+  },
+
+  {
+    id: 'POL-064',
+    emirate: 'All UAE',
+    category: 'identity',
+    title: 'Divorce Certificate — Registration and Attestation',
+    content: `Divorce registration and attestation in the UAE applies differently depending on whether the marriage was conducted under Islamic (Sharia) law or as a civil/non-Muslim marriage.
+
+Muslim divorces:
+- Filed and processed through the Personal Status Courts, or in Dubai specifically, initially through the Family Guidance section of the Dubai Courts before proceeding to litigation if reconciliation fails.
+- The court issues an official divorce certificate/judgment upon finalization.
+
+Non-Muslim / civil divorces:
+- The Abu Dhabi Judicial Department operates a dedicated Civil Family Court accepting non-Muslim divorce cases regardless of nationality or where the marriage took place, under UAE's civil personal status law framework (Federal Law No. 41 of 2022 and related regulations).
+- Dubai Courts also has provisions for non-Muslim personal status matters.
+- Foreign nationals may alternatively choose to divorce in their home country if that is more relevant to their circumstances (e.g., for property or custody matters governed by home-country law).
+
+Attestation for use abroad:
+- A UAE-issued divorce certificate that needs to be recognized in another country typically requires:
+  1. Attestation by the UAE Ministry of Foreign Affairs
+  2. Attestation/legalization by the relevant country's embassy in the UAE
+  3. Possibly further legalization by that country's foreign ministry upon arrival
+
+Attestation of a foreign divorce certificate for use in the UAE:
+- Must be attested by: the issuing country's Ministry of Foreign Affairs, then the UAE Embassy in that country, then the UAE Ministry of Foreign Affairs upon arrival in the UAE.
+- Required for matters such as remarriage in the UAE, custody/visa sponsorship changes, or updating Emirates ID/visa marital status.
+
+Where to start: Dubai Courts (dc.gov.ae), Abu Dhabi Judicial Department (adjd.gov.ae), or the relevant Personal Status Court in your emirate of residence.
+
+---
+
+شهادة الطلاق — التسجيل والتوثيق
+
+يختلف تسجيل الطلاق وتوثيقه في الإمارات حسب ما إذا كان الزواج قد عُقد وفق الشريعة الإسلامية أو كزواج مدني/غير مسلم.
+
+طلاق المسلمين:
+- يُقدَّم ويُعالَج عبر محاكم الأحوال الشخصية، وفي دبي تحديداً عبر قسم الإرشاد الأسري بمحاكم دبي أولاً قبل التقاضي إذا فشل الصلح.
+- تصدر المحكمة شهادة/حكم طلاق رسمي عند الانتهاء.
+
+طلاق غير المسلمين / المدني:
+- تدير دائرة القضاء بأبوظبي محكمة أسرة مدنية مخصصة تقبل قضايا طلاق غير المسلمين بغض النظر عن الجنسية أو مكان عقد الزواج.
+- لدى محاكم دبي أيضاً أحكام لمسائل الأحوال الشخصية لغير المسلمين.
+- يمكن للأجانب اختيار الطلاق في بلدهم الأصلي إذا كان ذلك أنسب لظروفهم.
+
+التوثيق للاستخدام خارج الإمارات:
+- وزارة الخارجية الإماراتية، ثم سفارة البلد المعني في الإمارات، وربما مزيد من التصديق لدى وصول البلد الأصلي.
+
+توثيق شهادة طلاق أجنبية للاستخدام في الإمارات:
+- وزارة خارجية البلد المُصدِر، ثم سفارة الإمارات في ذلك البلد، ثم وزارة الخارجية الإماراتية عند الوصول.
+- مطلوبة لأمور مثل الزواج مرة أخرى في الإمارات، أو تغييرات الحضانة/كفالة التأشيرة، أو تحديث الحالة الاجتماعية في الهوية/التأشيرة.
+
+نقطة البداية: محاكم دبي، دائرة القضاء بأبوظبي، أو محكمة الأحوال الشخصية المعنية في إمارة الإقامة.`
+  },
+
+  {
+    id: 'POL-065',
+    emirate: 'Abu Dhabi',
+    category: 'government-services',
+    title: 'TAMM Platform — Abu Dhabi Digital Government Services',
+    content: `TAMM (tamm.abudhabi) is Abu Dhabi's unified digital government services platform, consolidating services from over 40 government entities into a single portal and app.
+
+Access:
+- Website: tamm.abudhabi
+- Mobile app: available on iOS and Android
+- In-person: TAMM service centers across Abu Dhabi (walk-in or by appointment)
+- Phone: 800-TAMM (8266)
+
+Login: TAMM uses UAE Pass for secure digital identity verification — residents should set up UAE Pass (via the UAE Pass app, linked to Emirates ID) before using TAMM's authenticated services.
+
+Categories of services available via TAMM (non-exhaustive):
+- Identity & visas: residence visa renewal support, Emirates ID appointments
+- Business: trade license issuance/renewal (ADDED-integrated), business setup guidance
+- Housing: Tawtheeq tenancy registration, ADDC utility connections
+- Health: Daman health card, medical appointment booking at government facilities
+- Education: ADEK school enrollment support
+- Traffic & transport: integrated with Department of Municipalities and Transport services (for Abu Dhabi transport matters — see Tawfeer for full transport service coverage)
+- Payments: unified bill payment for multiple government fees and utilities in one transaction
+- Complaints & feedback: a single channel to raise issues across participating entities rather than contacting each department separately
+
+TAMM Business specifically: a dedicated section for entrepreneurs and companies covering licensing, approvals, and compliance across Abu Dhabi government entities, aimed at reducing the number of separate government touchpoints needed to run a business in the emirate.
+
+Support: TAMM's contact center (800-8266) can route inquiries to the correct underlying government entity even if you're unsure which department actually owns a given service — this is one of the platform's core value propositions (a single front door to Abu Dhabi government).
+
+---
+
+منصة تام — الخدمات الحكومية الرقمية في أبوظبي
+
+منصة تام (tamm.abudhabi) هي المنصة الموحدة للخدمات الحكومية الرقمية في أبوظبي، وتجمع خدمات أكثر من 40 جهة حكومية في بوابة وتطبيق واحد.
+
+الوصول:
+- الموقع: tamm.abudhabi
+- التطبيق: متاح على iOS وAndroid
+- حضورياً: مراكز خدمة تام في أبوظبي
+- الهاتف: 800-8266
+
+تسجيل الدخول: تستخدم تام الهوية الرقمية UAE Pass للتحقق الآمن؛ يُنصح بإعداد UAE Pass قبل استخدام الخدمات الموثقة على تام.
+
+فئات الخدمات المتاحة عبر تام (غير شاملة):
+- الهوية والتأشيرات: دعم تجديد تأشيرة الإقامة، مواعيد الهوية الإماراتية
+- الأعمال: إصدار/تجديد الرخصة التجارية، إرشادات تأسيس الأعمال
+- الإسكان: تسجيل عقود الإيجار عبر توثيق، توصيلات ADDC
+- الصحة: البطاقة الصحية ضمان، حجز المواعيد الطبية في المنشآت الحكومية
+- التعليم: دعم التسجيل المدرسي عبر ADEK
+- المرور والنقل: متكامل مع خدمات دائرة البلديات والنقل (لمسائل النقل في أبوظبي — راجع Tawfeer للتغطية الكاملة لخدمات النقل)
+- المدفوعات: دفع موحد لعدة رسوم حكومية ومرافق في معاملة واحدة
+- الشكاوى والملاحظات: قناة واحدة لرفع القضايا عبر الجهات المشاركة
+
+تام للأعمال: قسم مخصص لرواد الأعمال والشركات يغطي التراخيص والموافقات والامتثال عبر جهات حكومة أبوظبي.
+
+الدعم: مركز اتصال تام (800-8266) يمكنه توجيه الاستفسارات للجهة الحكومية الصحيحة حتى لو لم تكن متأكداً من الجهة المسؤولة عن خدمة معينة.`
+  },
+
+  {
+    id: 'POL-066',
+    emirate: 'Dubai',
+    category: 'housing',
+    title: 'Dubai Land Department, RERA, and Rent Disputes',
+    content: `The Dubai Land Department (DLD, dubailand.gov.ae) is the government entity overseeing all real estate transactions, registration, and regulation in Dubai. The Real Estate Regulatory Agency (RERA) operates under DLD and specifically regulates the rental and brokerage market.
+
+Dubai Land Department (DLD) — core functions:
+- Property title registration and transfer for all Dubai real estate transactions (sales, mortgages, gifts, inheritance).
+- Issuing title deeds.
+- Registering off-plan (under-construction) property sales through the Oqood system.
+- Real estate broker and developer licensing.
+
+RERA — core functions:
+- Regulates real estate brokers, requiring licensing (RERA card) for anyone practicing brokerage in Dubai.
+- Sets and publishes the annual Rental Increase Calculator, which determines the maximum legal percentage a landlord can increase rent based on how far current rent sits below the average market rate for similar units (accessible via dubailand.gov.ae).
+- Oversees the Ejari tenancy registration system (see also POL-018).
+- Regulates real estate development escrow accounts to protect off-plan buyers' payments.
+
+Rent disputes — Rental Dispute Settlement Centre (RDSC):
+- The RDSC (a Dubai Courts-affiliated body, rdc.dubaicourts.gov.ae) handles disputes between landlords and tenants in Dubai — eviction disputes, unpaid rent, illegal rent increases, maintenance disputes, and security deposit disagreements.
+- Filing a case requires: a valid Ejari certificate for the tenancy in question, the tenancy contract, and supporting evidence for the specific dispute (payment records, correspondence, photos for maintenance issues, etc.).
+- Filing fee: typically calculated as a percentage of the annual rent value (minimum and maximum caps apply) — check the current RDSC fee schedule, as rates are periodically updated.
+- Cases below a certain value threshold may be handled through a faster summary process; larger or more complex disputes proceed to a full hearing.
+- Landlords seeking eviction for personal use or sale of the property must provide legally mandated notice periods (typically 12 months' notice via registered mail/notary, delivered before the current contract's renewal date) — evicting without proper notice is a common basis for tenants to successfully dispute an eviction.
+
+Where to start a rent dispute: rdc.dubaicourts.gov.ae, or in person at the RDSC office in Dubai.
+
+---
+
+دائرة الأراضي والأملاك في دبي، مؤسسة التنظيم العقاري، ونزاعات الإيجار
+
+دائرة الأراضي والأملاك في دبي (DLD) هي الجهة الحكومية المشرفة على جميع معاملات وتسجيل وتنظيم العقارات في دبي. تعمل مؤسسة التنظيم العقاري (RERA) تحت مظلة الدائرة وتُنظِّم تحديداً سوق الإيجار والوساطة.
+
+دائرة الأراضي والأملاك — الوظائف الأساسية:
+- تسجيل ونقل ملكية العقارات لجميع معاملات دبي العقارية.
+- إصدار سندات الملكية.
+- تسجيل مبيعات العقارات على الخارطة عبر نظام عقود.
+- ترخيص الوسطاء العقاريين والمطورين.
+
+مؤسسة التنظيم العقاري (RERA) — الوظائف الأساسية:
+- تنظيم الوسطاء العقاريين، وتشترط الترخيص (بطاقة RERA) لممارسة الوساطة في دبي.
+- وضع ونشر حاسبة الزيادة السنوية للإيجار، التي تحدد الحد الأقصى القانوني لنسبة زيادة الإيجار.
+- الإشراف على نظام تسجيل عقود الإيجار إيجاري (راجع أيضاً POL-018).
+- تنظيم حسابات الضمان لحماية مدفوعات مشتري العقارات على الخارطة.
+
+نزاعات الإيجار — مركز فض المنازعات الإيجارية (RDSC):
+- يتعامل المركز (تابع لمحاكم دبي) مع نزاعات المالك والمستأجر: الإخلاء، الإيجار غير المدفوع، الزيادات غير القانونية، نزاعات الصيانة، والتأمين.
+- تقديم القضية يتطلب: شهادة إيجاري سارية، عقد الإيجار، ومستندات داعمة للنزاع المحدد.
+- رسوم التقديم: تُحسب عادة كنسبة من قيمة الإيجار السنوي (بحدود دنيا وعليا).
+- القضايا الأقل من حد معين قد تُعالَج عبر إجراء مستعجل أسرع؛ النزاعات الأكبر تخضع لجلسة استماع كاملة.
+- على المُلّاك الراغبين في الإخلاء لأغراض الاستخدام الشخصي أو البيع تقديم إشعار مسبق قانوني (عادة 12 شهراً عبر بريد مسجَّل/كاتب عدل).
+
+نقطة البداية لنزاع إيجاري: rdc.dubaicourts.gov.ae، أو حضورياً في مكتب المركز في دبي.`
   }
 
 ];

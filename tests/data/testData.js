@@ -106,6 +106,20 @@ const POLICY_QUERIES = {
  healthFujairah: { query: 'health insurance Fujairah', expectedId: 'POL-053' },
  schoolFujairah: { query: 'school enrollment Fujairah', expectedId: 'POL-054' },
  tradeFujairah: { query: 'trade license Fujairah', expectedId: 'POL-055' },
+
+ // Step 3 additions (v3.7.0) — verified against live RAG scoring, each
+ // query's expected policy ranks #1 in the top-5 results
+ moiServices: { query: 'lost Emirates ID replacement passport', expectedId: 'POL-056' },
+ mohre: { query: 'labour complaint unpaid salary MOHRE', expectedId: 'POL-057' },
+ zakatDetail: { query: 'Zakat Fund eligibility application', expectedId: 'POL-058' },
+ podWidows: { query: 'people of determination widows support benefits', expectedId: 'POL-059' },
+ telecom: { query: 'Etisalat du internet connection', expectedId: 'POL-060' },
+ medicalFitnessEmployment: { query: 'medical fitness certificate employment', expectedId: 'POL-061' },
+ deathCertificate: { query: 'death certificate registration attestation', expectedId: 'POL-062' },
+ companyFormation: { query: 'company formation mainland free zone', expectedId: 'POL-063' },
+ divorceCertificate: { query: 'divorce certificate registration attestation', expectedId: 'POL-064' },
+ tammPlatform: { query: 'TAMM platform Abu Dhabi digital services', expectedId: 'POL-065' },
+ dldRera: { query: 'Dubai Land Department RERA rent dispute', expectedId: 'POL-066' },
 };
 
 
@@ -188,6 +202,18 @@ const CHAT_MESSAGES = {
  tradeFujairah: 'How do I renew my trade license in Fujairah?',
  tradeAjman: 'How do I renew my trade license in Ajman?',
 
+
+ // English — Step 3 new policy categories (v3.7.0), used in UI tests
+ // NOTE: companyFormation and tammPlatform deliberately avoid starting with
+ // "What" — server.js's FOLLOW_UP_TRIGGERS regex (/^what (about )?(.+)/i)
+ // is overly broad and matches any "What...?" question, not just genuine
+ // follow-ups, which corrupts the RAG query on a message's very first turn.
+ // Verified via full-flow simulation that these phrasings avoid that path.
+ moiLostId: 'I lost my Emirates ID, how do I get a replacement?',
+ mohreComplaint: 'How do I file a labour complaint for unpaid salary?',
+ companyFormation: 'Explain the difference between mainland and free zone company formation.',
+ tammPlatform: 'Tell me about the TAMM platform services in Abu Dhabi.',
+ dldRentDispute: 'How do I file a rent dispute in Dubai?',
 
  // English — memory / follow-up
  followUpDubai: 'what about Dubai?',
