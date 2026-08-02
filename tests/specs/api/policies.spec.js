@@ -214,4 +214,76 @@ test.describe('Policy Search API', () => {
  });
 
 
+ // ── Step 3 Additions (v3.7.0) ─────────────────────────────────────────────
+ // Direct ID assertion used here (not EN.policy_ids) since these topics are
+ // new and locale_en.json wasn't extended for them — queries were verified
+ // against the live RAG scoring algorithm before writing these tests.
+
+ test('[TC_POL_030] MOI lost ID query returns POL-056', async ({ api }) => {
+   const { body } = await api.searchPolicies(POLICY_QUERIES.moiServices.query);
+   const ids = body.results.map(r => r.id);
+   expect(ids).toContain('POL-056');
+ });
+
+ test('[TC_POL_031] MOHRE labour complaint query returns POL-057', async ({ api }) => {
+   const { body } = await api.searchPolicies(POLICY_QUERIES.mohre.query);
+   const ids = body.results.map(r => r.id);
+   expect(ids).toContain('POL-057');
+ });
+
+ test('[TC_POL_032] Zakat Fund eligibility query returns POL-058', async ({ api }) => {
+   const { body } = await api.searchPolicies(POLICY_QUERIES.zakatDetail.query);
+   const ids = body.results.map(r => r.id);
+   expect(ids).toContain('POL-058');
+ });
+
+ test('[TC_POL_033] People of Determination / widows query returns POL-059', async ({ api }) => {
+   const { body } = await api.searchPolicies(POLICY_QUERIES.podWidows.query);
+   const ids = body.results.map(r => r.id);
+   expect(ids).toContain('POL-059');
+ });
+
+ test('[TC_POL_034] telecom connection query returns POL-060', async ({ api }) => {
+   const { body } = await api.searchPolicies(POLICY_QUERIES.telecom.query);
+   const ids = body.results.map(r => r.id);
+   expect(ids).toContain('POL-060');
+ });
+
+ test('[TC_POL_035] employment medical fitness query returns POL-061', async ({ api }) => {
+   const { body } = await api.searchPolicies(POLICY_QUERIES.medicalFitnessEmployment.query);
+   const ids = body.results.map(r => r.id);
+   expect(ids).toContain('POL-061');
+ });
+
+ test('[TC_POL_036] death certificate query returns POL-062', async ({ api }) => {
+   const { body } = await api.searchPolicies(POLICY_QUERIES.deathCertificate.query);
+   const ids = body.results.map(r => r.id);
+   expect(ids).toContain('POL-062');
+ });
+
+ test('[TC_POL_037] company formation query returns POL-063', async ({ api }) => {
+   const { body } = await api.searchPolicies(POLICY_QUERIES.companyFormation.query);
+   const ids = body.results.map(r => r.id);
+   expect(ids).toContain('POL-063');
+ });
+
+ test('[TC_POL_038] divorce certificate query returns POL-064', async ({ api }) => {
+   const { body } = await api.searchPolicies(POLICY_QUERIES.divorceCertificate.query);
+   const ids = body.results.map(r => r.id);
+   expect(ids).toContain('POL-064');
+ });
+
+ test('[TC_POL_039] TAMM platform query returns POL-065', async ({ api }) => {
+   const { body } = await api.searchPolicies(POLICY_QUERIES.tammPlatform.query);
+   const ids = body.results.map(r => r.id);
+   expect(ids).toContain('POL-065');
+ });
+
+ test('[TC_POL_040] DLD/RERA rent dispute query returns POL-066', async ({ api }) => {
+   const { body } = await api.searchPolicies(POLICY_QUERIES.dldRera.query);
+   const ids = body.results.map(r => r.id);
+   expect(ids).toContain('POL-066');
+ });
+
+
 });
