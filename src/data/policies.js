@@ -3,6 +3,10 @@
 // All 7 Emirates | English + Arabic
 // Sources: UAE Official Government Portals, MOI, u.ae, Gulf News, Khaleej Times
 // Last updated: July 2025
+//
+// NOTE: Transport-related policies (driving license, vehicle registration,
+// traffic fines) were removed in v3.6.0 — that scope now belongs to the
+// sister project, Tawfeer (tawfeer-ai.onrender.com).
 // ─────────────────────────────────────────────────────────────────────────────
 
 const policies = [
@@ -10,126 +14,9 @@ const policies = [
   // ─── ALL UAE ─────────────────────────────────────────────────────────────
 
   {
-    id: 'POL-001',
-    emirate: 'All UAE',
-    category: 'driving',
-    title: 'Driving License Renewal',
-    content: `Driving licenses in the UAE can be renewed starting 6 months before expiry. A 30-day grace period applies after expiry with no fine. After that, a fine of AED 10 per month applies (maximum AED 500).
-
-Validity after renewal:
-- UAE and GCC nationals (above 21): 10 years
-- Expatriate residents (above 21): 5 years
-- Below 21 years: 1 year
-
-Required documents:
-- Emirates ID
-- Current driving license
-- Eye test certificate from an approved optician (mandatory)
-- Passport-size photograph
-
-Penalty for driving with expired license:
-- AED 500 fine
-- 4 black points
-- Vehicle impoundment for 7 days
-
-Abu Dhabi: Renew via TAMM platform (tamm.abudhabi) or Department of Transport service centers.
-Dubai: Renew via RTA website (rta.ae) or Dubai Drive smart app.
-Sharjah, Ajman, Umm Al Quwain, Ras Al Khaimah, Fujairah: Renew via Ministry of Interior (MOI) website (moi.gov.ae) or MOI UAE smart app.
-
----
-
-تجديد رخصة القيادة في الإمارات
-
-يمكن تجديد رخصة القيادة قبل 6 أشهر من انتهاء صلاحيتها. تُمنح فترة سماح مدتها 30 يوماً بعد انتهاء الصلاحية دون غرامة، وبعد ذلك تُفرض غرامة قدرها 10 درهم شهرياً (بحد أقصى 500 درهم).
-
-مدة الصلاحية بعد التجديد:
-- المواطنون الإماراتيون ومواطنو دول الخليج (فوق 21 سنة): 10 سنوات
-- المقيمون الأجانب (فوق 21 سنة): 5 سنوات
-- دون 21 سنة: سنة واحدة
-
-المستندات المطلوبة:
-- الهوية الإماراتية
-- رخصة القيادة الحالية
-- شهادة فحص النظر من طبيب بصريات معتمد
-- صورة شخصية
-
-عقوبة القيادة برخصة منتهية الصلاحية:
-- غرامة 500 درهم
-- 4 نقاط سوداء
-- مصادرة السيارة لمدة 7 أيام
-
-أبوظبي: التجديد عبر منصة تام (tamm.abudhabi) أو مراكز خدمة دائرة النقل.
-دبي: التجديد عبر موقع هيئة الطرق والمواصلات (rta.ae) أو تطبيق دبي درايف.
-الشارقة، عجمان، أم القيوين، رأس الخيمة، الفجيرة: التجديد عبر موقع وزارة الداخلية (moi.gov.ae) أو تطبيق MOI UAE.`
-  },
-
-  {
-    id: 'POL-002',
-    emirate: 'All UAE',
-    category: 'driving',
-    title: 'Vehicle Registration Renewal',
-    content: `Vehicle registration (Mulkiya) must be renewed annually in the UAE. Driving with an expired registration carries a fine of AED 500 and vehicle impoundment.
-
-Required before renewal:
-- Valid UAE motor insurance (third party minimum)
-- Passing vehicle technical inspection (Tasjeel/Emirates Vehicle Gate/Muroor depending on emirate)
-
-Abu Dhabi: Renew via TAMM platform or Department of Transport centers.
-Dubai: Renew via RTA website, RTA app, or authorized centers.
-Sharjah, Ajman, Umm Al Quwain, Ras Al Khaimah, Fujairah: Renew via MOI UAE app or emirate police portal.
-
-Fees vary by vehicle age, type, and emirate. Contact the relevant authority for exact fees.
-
----
-
-تجديد تسجيل المركبة في الإمارات
-
-يجب تجديد تسجيل المركبة (الملكية) سنوياً. يُعاقب على القيادة بتسجيل منتهٍ بغرامة 500 درهم ومصادرة السيارة.
-
-المتطلبات قبل التجديد:
-- تأمين سيارة إماراتي ساري المفعول (طرف ثالث كحد أدنى)
-- اجتياز الفحص الفني للمركبة (تسجيل / بوابة مركبات الإمارات / مرور حسب الإمارة)
-
-أبوظبي: عبر منصة تام أو مراكز دائرة النقل.
-دبي: عبر موقع هيئة الطرق والمواصلات أو التطبيق أو المراكز المعتمدة.
-الشارقة، عجمان، أم القيوين، رأس الخيمة، الفجيرة: عبر تطبيق MOI UAE أو بوابة شرطة الإمارة.`
-  },
-
-  {
-    id: 'POL-003',
-    emirate: 'All UAE',
-    category: 'driving',
-    title: 'Traffic Fine Payment',
-    content: `Traffic fines in the UAE can be checked and paid online through official government portals.
-
-Abu Dhabi: Pay via TAMM platform (tamm.abudhabi) or Abu Dhabi Police website (adpolice.gov.ae).
-Dubai: Pay via RTA website (rta.ae) or Dubai Police website (dubaipolice.gov.ae).
-Sharjah: Pay via Sharjah Police website (sharjahpolice.gov.ae) or MOI UAE app.
-Ajman, Umm Al Quwain, Ras Al Khaimah, Fujairah: Pay via MOI UAE app (moi.gov.ae) or respective emirate police portal.
-
-A 50% discount on traffic fines is periodically offered by UAE traffic authorities. Check the relevant portal for current promotions.
-
-Required: Emirates ID or vehicle plate number to check fines.
-
----
-
-دفع المخالفات المرورية في الإمارات
-
-يمكن الاستعلام عن المخالفات المرورية ودفعها عبر البوابات الرسمية.
-
-أبوظبي: عبر منصة تام أو موقع شرطة أبوظبي.
-دبي: عبر موقع هيئة الطرق والمواصلات أو موقع شرطة دبي.
-الشارقة: عبر موقع شرطة الشارقة أو تطبيق MOI UAE.
-عجمان، أم القيوين، رأس الخيمة، الفجيرة: عبر تطبيق MOI UAE أو بوابة شرطة الإمارة المعنية.
-
-يُقدَّم خصم 50% على المخالفات المرورية بشكل دوري. تحقق من البوابة الرسمية للاطلاع على العروض الحالية.
-المطلوب: الهوية الإماراتية أو رقم لوحة المركبة للاستعلام.`
-  },
-
-  {
     id: 'POL-004',
     emirate: 'All UAE',
-    category: 'driving',
+    category: 'appointments',
     title: 'Appointment Booking at Government Service Centers',
     content: `Government service appointments can be booked online across all UAE emirates.
 
@@ -138,11 +25,10 @@ Dubai: Book via Dubai Now app, RTA app, or ICA Smart Services.
 Sharjah, Ajman, Umm Al Quwain, Ras Al Khaimah, Fujairah: Book via MOI UAE app or the respective emirate government portal.
 
 Services available for appointment booking include:
-- Driving license renewal and tests
-- Vehicle registration
 - Emirates ID
 - Residency visa stamping
 - Trade license services
+- Health card applications
 
 ---
 
@@ -154,7 +40,7 @@ Services available for appointment booking include:
 دبي: عبر تطبيق دبي ناو أو تطبيق هيئة الطرق أو ICA Smart Services.
 الشارقة، عجمان، أم القيوين، رأس الخيمة، الفجيرة: عبر تطبيق MOI UAE أو بوابة حكومة الإمارة.
 
-الخدمات المتاحة للحجز تشمل: تجديد رخصة القيادة، تسجيل المركبة، الهوية الإماراتية، ختم تأشيرة الإقامة، خدمات الترخيص التجاري.`
+الخدمات المتاحة للحجز تشمل: الهوية الإماراتية، ختم تأشيرة الإقامة، خدمات الترخيص التجاري، طلبات البطاقة الصحية.`
   },
 
   {
@@ -1332,59 +1218,6 @@ Green visa holders and UAE nationals may have different deposit requirements.
   // ─── SHARJAH ─────────────────────────────────────────────────────────────
 
   {
-    id: 'POL-036',
-    emirate: 'Sharjah',
-    category: 'driving',
-    title: 'Driving License Renewal — Sharjah',
-    content: `Sharjah driving licenses are renewed through the Ministry of Interior (MOI) portal or MOI UAE smart app. In-person renewal is available at the Traffic and Licensing Services Centre in Al Ramtha, Sharjah.
-
-Online: Visit moi.gov.ae or download MOI UAE app, log in via UAE Pass, navigate to Traffic Services > Renew Driving License.
-In-person: Visit Traffic and Licensing Services Centre, Al Ramtha, Sharjah.
-
-Required documents:
-- Emirates ID
-- Current driving license
-- Eye test certificate from an approved optician (mandatory)
-- Passport-size photograph
-
-Fees:
-- Under 21 years: AED 120
-- 21 years and above: AED 320
-- Delivery fee: AED 15 (waived if collected in person)
-- Late fine: AED 10 per month after 30-day grace period (maximum AED 500)
-
-Validity after renewal:
-- UAE and GCC nationals (above 21): 10 years
-- Expatriate residents (above 21): 5 years
-- Under 21: 1 year
-- Senior citizens (65+): must renew annually with enhanced eye test
-
----
-
-تجديد رخصة القيادة في الشارقة
-
-يتم تجديد رخصة القيادة في الشارقة عبر موقع وزارة الداخلية (moi.gov.ae) أو تطبيق MOI UAE أو بالحضور الشخصي إلى مركز خدمات الترخيص المروري في الرملة بالشارقة.
-
-المستندات المطلوبة:
-- الهوية الإماراتية
-- رخصة القيادة الحالية
-- شهادة فحص النظر من طبيب بصريات معتمد (إلزامية)
-- صورة شخصية
-
-الرسوم:
-- أقل من 21 سنة: 120 درهم
-- 21 سنة فأكثر: 320 درهم
-- رسوم التوصيل: 15 درهم (يُعفى منها عند الاستلام شخصياً)
-- غرامة التأخير: 10 درهم شهرياً بعد فترة السماح (30 يوماً) بحد أقصى 500 درهم
-
-مدة الصلاحية:
-- المواطنون الإماراتيون والخليجيون (فوق 21): 10 سنوات
-- المقيمون الأجانب (فوق 21): 5 سنوات
-- أقل من 21: سنة واحدة
-- كبار السن (65+): تجديد سنوي مع فحص بصر معزَّز`
-  },
-
-  {
     id: 'POL-037',
     emirate: 'Sharjah',
     category: 'healthcare',
@@ -1564,62 +1397,6 @@ If expired more than 3 months: contact SEDD Inspection Division.
   // ─── AJMAN ───────────────────────────────────────────────────────────────
 
   {
-    id: 'POL-041',
-    emirate: 'Ajman',
-    category: 'driving',
-    title: 'Driving License Renewal — Ajman',
-    content: `Ajman driving licenses are renewed through the Ministry of Interior (MOI) portal at moi.gov.ae or the MOI UAE smart app. In-person renewal is available at the Ajman Traffic Department.
-
-Online: Visit moi.gov.ae or MOI UAE app > Traffic Services > Renew Driving License > Select Ajman.
-In-person: Ajman Traffic Department.
-
-Required documents:
-- Emirates ID
-- Current driving license
-- Eye test certificate from an approved optician (mandatory — available at Ajman Medical Center, AED 100)
-- Passport-size photograph
-
-Fees:
-- Under 21 years: AED 100
-- 21 years and above: AED 400
-- Total including knowledge and service fees: approximately AED 330 (AED 300 + AED 20 knowledge fee + AED 10 service fee)
-- Late fine: AED 10 per month after 30-day grace period (maximum AED 500)
-
-Validity after renewal:
-- UAE and GCC nationals (above 21): 10 years
-- Expatriate residents (above 21): 5 years
-- Under 21: 1 year
-
-Driving with expired license penalty:
-- AED 500 fine
-- 4 black points
-- Vehicle impounded for 7 days (if expired more than 3 months)
-
----
-
-تجديد رخصة القيادة في عجمان
-
-يتم التجديد عبر موقع وزارة الداخلية (moi.gov.ae) أو تطبيق MOI UAE أو بالحضور لإدارة المرور في عجمان.
-
-المستندات المطلوبة:
-- الهوية الإماراتية
-- رخصة القيادة الحالية
-- شهادة فحص النظر من طبيب بصريات معتمد (إلزامية)
-- صورة شخصية
-
-الرسوم:
-- أقل من 21 سنة: 100 درهم
-- 21 سنة فأكثر: 400 درهم
-- الإجمالي مع رسوم الخدمة والمعرفة: نحو 330 درهم
-- غرامة التأخير: 10 درهم شهرياً (حد أقصى 500 درهم)
-
-عقوبة القيادة برخصة منتهية:
-- غرامة 500 درهم
-- 4 نقاط سوداء
-- مصادرة السيارة 7 أيام إذا مضى أكثر من 3 أشهر`
-  },
-
-  {
     id: 'POL-042',
     emirate: 'Ajman',
     category: 'healthcare',
@@ -1748,54 +1525,6 @@ Renewal must be done annually before license expiry.
   // ─── UMM AL QUWAIN ───────────────────────────────────────────────────────
 
   {
-    id: 'POL-045',
-    emirate: 'Umm Al Quwain',
-    category: 'driving',
-    title: 'Driving License Renewal — Umm Al Quwain',
-    content: `Umm Al Quwain driving licenses are renewed through the Ministry of Interior (MOI) portal at moi.gov.ae or the MOI UAE smart app.
-
-Online: moi.gov.ae or MOI UAE app > Traffic Services > Renew Driving License > Select Umm Al Quwain.
-In-person: Umm Al Quwain Traffic Department.
-
-Required documents:
-- Emirates ID
-- Current driving license
-- Eye test certificate from an approved optician (mandatory)
-- Passport-size photograph
-
-Fees (standard MOI rates):
-- Under 21 years: AED 100
-- 21 years and above: AED 300
-- Late fine: AED 10 per month after 30-day grace period (maximum AED 500)
-
-Validity after renewal:
-- UAE and GCC nationals (above 21): 10 years
-- Expatriate residents (above 21): 5 years
-- Under 21: 1 year
-
----
-
-تجديد رخصة القيادة في أم القيوين
-
-يتم التجديد عبر موقع وزارة الداخلية (moi.gov.ae) أو تطبيق MOI UAE أو بالحضور لإدارة المرور في أم القيوين.
-
-المستندات المطلوبة:
-- الهوية الإماراتية
-- رخصة القيادة الحالية
-- شهادة فحص النظر (إلزامية)
-- صورة شخصية
-
-الرسوم:
-- أقل من 21 سنة: 100 درهم
-- 21 سنة فأكثر: 300 درهم
-- غرامة التأخير: 10 درهم شهرياً (حد أقصى 500 درهم)
-
-مدة الصلاحية بعد التجديد:
-- المواطنون الإماراتيون والخليجيون: 10 سنوات
-- المقيمون الأجانب: 5 سنوات`
-  },
-
-  {
     id: 'POL-046',
     emirate: 'Umm Al Quwain',
     category: 'healthcare',
@@ -1867,53 +1596,6 @@ Contact: Ministry of Education (moe.gov.ae) or UAQ Government portal for local s
   },
 
   // ─── RAS AL KHAIMAH ──────────────────────────────────────────────────────
-
-  {
-    id: 'POL-048',
-    emirate: 'Ras Al Khaimah',
-    category: 'driving',
-    title: 'Driving License Renewal — Ras Al Khaimah',
-    content: `Ras Al Khaimah driving licenses are renewed exclusively online through the Ministry of Interior (MOI) portal or MOI UAE app. RAK Police officially moved all renewals online and stopped in-person renewals at service centers.
-
-Online: moi.gov.ae or MOI UAE app > Traffic Services > Renew Driving License > Select Ras Al Khaimah.
-For assistance: RAK Police website (rakpolice.gov.ae).
-
-Required documents:
-- Emirates ID
-- Current driving license
-- Eye test certificate from an approved optician (mandatory)
-- Passport-size photograph
-
-Fees (standard MOI rates):
-- Under 21 years: AED 100
-- 21 years and above: AED 300
-- Late fine: AED 10 per month after 30-day grace period (maximum AED 500)
-
-Validity after renewal:
-- UAE and GCC nationals (above 21): 10 years
-- Expatriate residents (above 21): 5 years
-- Under 21: 1 year
-
----
-
-تجديد رخصة القيادة في رأس الخيمة
-
-تجديد رخصة القيادة في رأس الخيمة متاح حصرياً عبر الإنترنت من خلال موقع وزارة الداخلية أو تطبيق MOI UAE. أوقفت شرطة رأس الخيمة رسمياً التجديد الشخصي في مراكز الخدمة.
-
-الإنترنت: moi.gov.ae أو تطبيق MOI UAE.
-للمساعدة: موقع شرطة رأس الخيمة (rakpolice.gov.ae).
-
-المستندات المطلوبة:
-- الهوية الإماراتية
-- رخصة القيادة الحالية
-- شهادة فحص النظر (إلزامية)
-- صورة شخصية
-
-الرسوم:
-- أقل من 21 سنة: 100 درهم
-- 21 سنة فأكثر: 300 درهم
-- غرامة التأخير: 10 درهم شهرياً (حد أقصى 500 درهم)`
-  },
 
   {
     id: 'POL-049',
@@ -2034,54 +1716,6 @@ License is valid for 1 year and must be renewed annually.
   },
 
   // ─── FUJAIRAH ────────────────────────────────────────────────────────────
-
-  {
-    id: 'POL-052',
-    emirate: 'Fujairah',
-    category: 'driving',
-    title: 'Driving License Renewal — Fujairah',
-    content: `Fujairah driving licenses are renewed through the Ministry of Interior (MOI) portal at moi.gov.ae or the MOI UAE smart app. In-person renewal is available at the Fujairah Traffic Department.
-
-Online: moi.gov.ae or MOI UAE app > Traffic Services > Renew Driving License > Select Fujairah.
-In-person: Fujairah Traffic Department.
-
-Required documents:
-- Emirates ID
-- Current driving license
-- Eye test certificate from an approved optician (mandatory)
-- Passport-size photograph
-
-Fees (standard MOI rates):
-- Under 21 years: AED 100
-- 21 years and above: AED 300
-- Late fine: AED 10 per month after 30-day grace period (maximum AED 500)
-
-Validity after renewal:
-- UAE and GCC nationals (above 21): 10 years
-- Expatriate residents (above 21): 5 years
-- Under 21: 1 year
-
----
-
-تجديد رخصة القيادة في الفجيرة
-
-يتم التجديد عبر موقع وزارة الداخلية (moi.gov.ae) أو تطبيق MOI UAE أو بالحضور لإدارة المرور في الفجيرة.
-
-المستندات المطلوبة:
-- الهوية الإماراتية
-- رخصة القيادة الحالية
-- شهادة فحص النظر (إلزامية)
-- صورة شخصية
-
-الرسوم:
-- أقل من 21 سنة: 100 درهم
-- 21 سنة فأكثر: 300 درهم
-- غرامة التأخير: 10 درهم شهرياً (حد أقصى 500 درهم)
-
-مدة الصلاحية:
-- المواطنون الإماراتيون والخليجيون: 10 سنوات
-- المقيمون الأجانب: 5 سنوات`
-  },
 
   {
     id: 'POL-053',
