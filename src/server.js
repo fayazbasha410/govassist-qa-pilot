@@ -11,6 +11,7 @@ const { retrieveRelevantDocs, computeConfidence } = require('./lib/ragEngine');
 const { isFollowUp, enrichFollowUp } = require('./lib/followUp');
 const { checkGuardrails } = require('./lib/guardrails');
 const { sanitiseOutput } = require('./lib/sanitizer');
+const { generateWithGuardrails } = require('./lib/outputGuardrails');
 const { createSessionStore } = require('./lib/session');
 
 
@@ -240,7 +241,7 @@ app.get('/favicon.ico', (req, res) => res.status(204).end());
 app.get('/api/health', (req, res) => {
   res.json({
     status: 'ok',
-    version: '3.8.0',
+    version: '3.9.0',
     model: 'groq/llama-3.1-8b-instant',
     name: 'GovMurshid',
     toolCalling: 'native',
@@ -249,6 +250,7 @@ app.get('/api/health', (req, res) => {
     confidenceScoring: true,
     voiceInput: true,
     outputSanitiser: true,
+    outputGuardrails: true,
   });
 });
 
@@ -429,12 +431,22 @@ app.post('/api/chat', async (req, res) => {
   const systemPrompt = `${ACTIVE_SYSTEM_PROMPT}${languageInstruction}${topicFocusInstruction}${historyContext}\n\nPOLICY CONTEXT:\n${context}`;
 
 
-  // ── 9. LLM call ───────────────────────────────────────────────────
+  // ── 9. LLM call — routed through output guardrails (v3.9.0) ───────
+  // generateWithGuardrails wraps callOllama with: format validation,
+  // one reask on invalid output, jailbreak-compliance filtering, and a
+  // groundedness check that strips any policy ID the model cites but
+  // that wasn't actually in the retrieved context (hallucination guard).
   try {
-    const rawReply = await callOllama(systemPrompt, message);
+    const guardResult = await generateWithGuardrails({
+      callLLM: callOllama,
+      systemPrompt,
+      userMessage: message,
+      docs,
+      maxReasks: 1,
+    });
 
 
-    const llmReply = sanitiseOutput(rawReply, isArabic);
+    const llmReply = sanitiseOutput(guardResult.reply, isArabic);
 
 
     sessionStore.addToHistory(session, 'user', message);
@@ -444,6 +456,13 @@ app.post('/api/chat', async (req, res) => {
     res.json({
       reply: llmReply,
       guardrail: { triggered: false },
+      outputGuardrail: {
+        formatValid: guardResult.formatValid,
+        reaskCount: guardResult.reaskCount,
+        wasFiltered: guardResult.wasFiltered,
+        grounded: guardResult.grounded,
+        citedIds: guardResult.citedIds,
+      },
       retrievedDocs: docs.map(d => ({ id: d.id, title: d.title, score: d.score, emirate: d.emirate })),
       toolUsed: null,
       language: isArabic ? 'ar' : 'en',
@@ -462,6 +481,7 @@ app.post('/api/chat', async (req, res) => {
       detail: err.message,
       reply: fallbackReply,
       guardrail: { triggered: false },
+      outputGuardrail: null,
       retrievedDocs: [],
       toolUsed: null,
       language: isArabic ? 'ar' : 'en',
@@ -479,7 +499,7 @@ app.post('/api/chat', async (req, res) => {
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`GovMurshid v3.8.0 running at http://localhost:${PORT}`);
+  console.log(`GovMurshid v3.9.0 running at http://localhost:${PORT}`);
   console.log(`LLM: Groq API (llama-3.1-8b-instant)`);
   console.log(`Tool calling: Groq native function calling ✅`);
   console.log(`Multi-turn memory: session-based (${sessionStore.maxTurns} turns, ${sessionStore.ttlMs / 60000}min TTL) ✅`);
@@ -487,6 +507,7 @@ app.listen(PORT, () => {
   console.log(`Confidence scoring: enabled ✅`);
   console.log(`Voice input: enabled ✅`);
   console.log(`Output sanitiser: enabled ✅`);
+  console.log(`Output guardrails: format validation + reask + jailbreak filter + hallucination guard ✅`);
   console.log(`Arabic support: enabled ✅`);
   console.log(`Scope: All UAE government services EXCEPT transport (see Tawfeer) ✅`);
   console.log(`Core logic modularized under src/lib/ for unit testing ✅`);

@@ -11,7 +11,31 @@ env:
 
 
 jobs:
-  # ── Job 1: Schema validation (no server needed, free) ──
+  # ── Job 1: Unit tests (Vitest) — fastest job, no server, runs in parallel ──
+  unit-tests:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+
+    steps:
+      - uses: actions/checkout@v4
+
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+
+      - run: npm ci
+
+
+      - name: Run Vitest unit suite
+        run: npm run test:unit
+
+
+  # ── Job 2: Schema validation (no server needed, free) ──
   schema-validation:
     name: Schema Validation
     runs-on: ubuntu-latest
@@ -59,11 +83,11 @@ jobs:
           "
 
 
-  # ── Job 2: Smoke tests only — ~40 tests, no LLM-heavy specs ──
+  # ── Job 3: Smoke tests only — ~40 tests, no LLM-heavy specs ──
   smoke-tests:
     name: Smoke Tests
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 20
     needs: schema-validation
 
 
@@ -107,7 +131,7 @@ jobs:
           retention-days: 3
 
 
-  # ── Job 3: Guardrail smoke — fast, no LLM needed ──
+  # ── Job 4: Guardrail smoke — fast, no LLM needed ──
   guardrail-smoke:
     name: Guardrail Smoke
     runs-on: ubuntu-latest
