@@ -6,6 +6,8 @@
   "scripts": {
     "start": "node src/server.js",
     "test": "npx playwright test",
+    "test:unit": "vitest run",
+    "test:unit:watch": "vitest",
     "eval": "cd eval/configs && promptfoo eval --config promptfoo.yaml",
     "eval:regression": "node eval/regression-gate.js",
     "eval:redteam": "node eval/adversarial/red-team.js",
@@ -27,7 +29,8 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.61.1",
-    "@types/node": "^26.1.1"
+    "@types/node": "^26.1.1",
+    "vitest": "^4.1.10"
   },
   "engines": {
     "node": ">=22.0.0"
