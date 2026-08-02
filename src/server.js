@@ -18,8 +18,10 @@ const sessions = new Map();
 const SESSION_MAX_TURNS = 6;
 const SESSION_TTL_MS = 30 * 60 * 1000;
 
+// NOTE (v3.6.0): 'driving' topic group removed — transport queries
+// (driving license, vehicle registration, traffic fines) now belong
+// to the sister project, Tawfeer (tawfeer-ai.onrender.com).
 const TOPIC_GROUPS = {
-  driving:  ['driving', 'license', 'licence', 'vehicle', 'registration', 'traffic', 'fine', 'fines', 'plate', 'renew', 'renewal', 'road', 'car'],
   school:   ['school', 'education', 'enroll', 'enrollment', 'student', 'khda', 'adek', 'university', 'college', 'child', 'kindergarten', 'kg'],
   insurance:['insurance', 'health', 'dha', 'daman', 'coverage', 'medical', 'clinic', 'hospital'],
   visa:     ['visa', 'residency', 'residence', 'emirates id', 'eid', 'passport', 'golden', 'permit', 'immigration', 'ica'],
@@ -116,23 +118,16 @@ function computeConfidence(docs, query) {
 // ─────────────────────────────────────────
 // OUTPUT SANITISER
 // ─────────────────────────────────────────
-// Fix 1: strips any characters outside Arabic Unicode, Latin, digits,
-// standard punctuation and whitespace — catches the Chinese-char
-// hallucination bug (e.g. ل避ance) before it reaches the user.
 
 function sanitiseOutput(text, isArabic) {
   if (!text) return text;
 
   if (isArabic) {
-    // Arabic response: keep Arabic script, Latin (for policy IDs like POL-001),
-    // digits, common punctuation, whitespace
     return text
       .replace(/[^\u0600-\u06FF\u0020-\u007Ea-zA-Z0-9\s\n\r.,!?;:()\-\[\]\/٪٫٬،؛؟۰-۹]/g, '')
-      .replace(/\s{3,}/g, '\n\n')  // collapse excessive whitespace
+      .replace(/\s{3,}/g, '\n\n')
       .trim();
   } else {
-    // English response: keep Latin, digits, standard punctuation, whitespace
-    // Allow Arabic only for proper nouns inside English answers (e.g. policy titles)
     return text
       .replace(/[^\u0000-\u007F\u0600-\u06FF\u00C0-\u024F\s\n\r]/g, '')
       .replace(/\s{3,}/g, '\n\n')
@@ -193,8 +188,6 @@ function retrieveRelevantDocs(query, topK = 5) {
     'required':     ['mandatory', 'compulsory', 'requirement'],
     'documents':    ['document', 'documentation', 'requirements'],
     'license':      ['licence', 'licensed'],
-    'fine':         ['fines', 'penalty', 'penalties'],
-    'fines':        ['fine', 'penalty', 'penalties'],
     'school':       ['education', 'enrollment', 'enroll'],
     'enroll':       ['enrollment', 'school', 'education'],
     'insurance':    ['insured', 'coverage', 'health'],
@@ -263,18 +256,6 @@ function detectArabic(text) {
 
 function translateArabicQuery(text) {
   const translations = {
-    'رخصة القيادة':                      'driving license',
-    'تجديد رخصة القيادة':               'driving license renewal',
-    'رخصة':                              'license',
-    'القيادة':                           'driving',
-    'تجديد':                             'renewal renew',
-    'غرامة':                             'fine',
-    'غرامات':                            'fines',
-    'مخالفة':                            'fine penalty',
-    'مرور':                              'traffic',
-    'سيارة':                             'vehicle',
-    'تسجيل السيارة':                     'vehicle registration',
-    'تسجيل':                             'registration',
     'الهوية الإماراتية':                 'Emirates ID',
     'بطاقة الهوية':                      'Emirates ID',
     'هوية':                              'Emirates ID',
@@ -384,7 +365,7 @@ function checkGuardrails(message) {
     if (message.includes(p)) return { blocked: true, reason: 'prompt_injection', message: 'يمكنني فقط المساعدة في خدمات حكومة الإمارات. لا يمكنني اتباع تعليمات تحاول تغيير سلوكي.' };
   }
   for (const t of offTopic) {
-    if (lower.includes(t)) return { blocked: true, reason: 'off_topic', message: `I'm GovMurshid, specialising in UAE government services across all seven emirates. I can help with licenses, fines, appointments, visas, housing, healthcare, education, business, and social services.` };
+    if (lower.includes(t)) return { blocked: true, reason: 'off_topic', message: `I'm GovMurshid, specialising in UAE government services across all seven emirates. I can help with Emirates ID, visas, appointments, housing, healthcare, education, business, and social services.` };
   }
   for (const t of arabicOffTopic) {
     if (message.includes(t)) return { blocked: true, reason: 'off_topic', message: `أنا GovMurshid، متخصص في خدمات حكومة الإمارات عبر جميع الإمارات السبع.` };
@@ -399,7 +380,6 @@ function checkGuardrails(message) {
 const Groq = require('groq-sdk');
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
-// Fix 2: reduced retries 3→2, added jitter to prevent thundering herd in CI
 async function callOllama(systemPrompt, userMessage, retries = 2) {
   for (let attempt = 1; attempt <= retries; attempt++) {
     try {
@@ -416,7 +396,6 @@ async function callOllama(systemPrompt, userMessage, retries = 2) {
     } catch (err) {
       const isRateLimit = err.status === 429 || err.message?.includes('429');
       if (isRateLimit && attempt < retries) {
-        // Jitter prevents parallel CI workers from retrying in lockstep
         const waitMs = (attempt * 6000) + Math.floor(Math.random() * 2000);
         console.log(`⏳ Groq rate limit — waiting ${(waitMs/1000).toFixed(1)}s (retry ${attempt}/${retries})`);
         await new Promise(r => setTimeout(r, waitMs));
@@ -431,21 +410,13 @@ async function callOllama(systemPrompt, userMessage, retries = 2) {
 // GROQ NATIVE TOOL CALLING
 // ─────────────────────────────────────────
 
+// NOTE (v3.6.0): checkFineStatus removed from tool definitions — traffic
+// fine checking is transport-scoped and now belongs to Tawfeer. The
+// underlying stub function still exists in agentTools.js and still backs
+// the direct REST route (/api/tools/fines/:plateNumber), but the LLM can
+// no longer invoke it via native tool calling in chat.
+// bookAppointment's service enum narrowed to match agentTools.js.
 const TOOL_DEFINITIONS = [
-  {
-    type: 'function',
-    function: {
-      name: 'checkFineStatus',
-      description: 'Check outstanding traffic or government fines for a vehicle using its plate number.',
-      parameters: {
-        type: 'object',
-        properties: {
-          plateNumber: { type: 'string', description: 'The vehicle plate number, e.g. AD-1234 or DXB-5678' }
-        },
-        required: ['plateNumber']
-      }
-    }
-  },
   {
     type: 'function',
     function: {
@@ -456,7 +427,7 @@ const TOOL_DEFINITIONS = [
         properties: {
           service: {
             type: 'string',
-            enum: ['driving-license', 'vehicle-registration', 'emirates-id', 'residency-visa', 'health-card']
+            enum: ['emirates-id', 'residency-visa', 'health-card']
           },
           date: { type: 'string', description: 'Date in YYYY-MM-DD format' }
         },
@@ -472,7 +443,7 @@ async function detectToolIntentWithLLM(message, retries = 2) {
       const completion = await groq.chat.completions.create({
         model: 'llama-3.1-8b-instant',
         messages: [
-          { role: 'system', content: 'UAE government services assistant. Use checkFineStatus ONLY when the user asks to check fines for a specific plate number. Use bookAppointment ONLY when the user explicitly asks to book or schedule an appointment. For all general information questions, do NOT call any tool.' },
+          { role: 'system', content: 'UAE government services assistant. Use bookAppointment ONLY when the user explicitly asks to book or schedule an appointment. For all general information questions, do NOT call any tool.' },
           { role: 'user', content: message }
         ],
         tools: TOOL_DEFINITIONS,
@@ -503,15 +474,12 @@ async function detectToolIntentWithLLM(message, retries = 2) {
 // SYSTEM PROMPT
 // ─────────────────────────────────────────
 
-// Fix 3: added two consistency instructions
-// (a) always name the responsible authority explicitly — never say "the authority" or "the department"
-// (b) only use tools when user explicitly asks to check a fine or book — general info stays in RAG
 const ACTIVE_SYSTEM_PROMPT = `You are GovMurshid, an AI guide for UAE government services across all seven emirates — Abu Dhabi, Dubai, Sharjah, Ajman, Umm Al Quwain, Ras Al Khaimah, and Fujairah.
 Answer ONLY using the policy information provided below.
 Do NOT add information that is not in the context.
 When an emirate is specified, focus your answer on that emirate's policies specifically.
 Always mention which emirate a rule applies to if it differs across emirates.
-Always name the responsible authority explicitly by its full name (e.g. "Roads and Transport Authority (RTA)", "Ministry of Interior (MOI)", "ICA", "TAMM", "Department of Health — DoH") — never use vague terms like "the authority" or "the department".
+Always name the responsible authority explicitly by its full name (e.g. "Ministry of Interior (MOI)", "ICA", "TAMM", "Department of Health — DoH") — never use vague terms like "the authority" or "the department".
 Be concise, helpful, and professional.
 If the answer is not in the context, say so clearly and suggest the user visit the relevant emirate portal.`;
 
@@ -519,22 +487,12 @@ If the answer is not in the context, say so clearly and suggest the user visit t
 // ROUTES
 // ─────────────────────────────────────────
 
-// Silence favicon 404
 app.get('/favicon.ico', (req, res) => res.status(204).end());
 
-// ─────────────────────────────────────────
-// FIXED: memory now reports 'multi-turn' (the capability, matching how
-// it's described everywhere else in the project) instead of
-// 'session-based' (the storage mechanism underneath — that hasn't
-// changed, it's just not what this field should report).
-// Also added policies: policies.length — computed dynamically from
-// the real policies array, NOT hardcoded, so it stays correct even
-// after Step 2 removes the transport policies.
-// ─────────────────────────────────────────
 app.get('/api/health', (req, res) => {
   res.json({
     status: 'ok',
-    version: '3.5.0',
+    version: '3.6.0',
     model: 'groq/llama-3.1-8b-instant',
     name: 'GovMurshid',
     toolCalling: 'native',
@@ -553,6 +511,9 @@ app.get('/api/policies/search', (req, res) => {
   res.json({ query: q, results: docs });
 });
 
+// NOTE (v3.6.0): checkFineStatus is now a stub — see agentTools.js.
+// This route still exists so old links / integrations get a helpful
+// redirect to Tawfeer instead of a 404.
 app.get('/api/tools/fines/:plateNumber', (req, res) => {
   res.json(checkFineStatus(req.params.plateNumber));
 });
@@ -619,29 +580,21 @@ app.post('/api/chat', async (req, res) => {
   let retrievalMessage = message;
   if (followUp) retrievalMessage = enrichFollowUp(message, session);
 
-  // ── 5. Tool intent detection (only if plate/booking keyword present) ──
-  const PLATE_PATTERN    = /\b[A-Z]{1,3}[-\s]?\d{1,5}\b/i;
+  // ── 5. Tool intent detection (only if booking keyword present) ────
+  // NOTE (v3.6.0): PLATE_PATTERN pre-check removed — checkFineStatus is
+  // no longer a callable tool, so there's nothing for a plate number to
+  // trigger anymore. Only booking-related language should reach the LLM
+  // tool-intent check now.
   const BOOKING_KEYWORDS = ['book', 'appointment', 'schedule', 'reserve', 'slot'];
-  const mightNeedTool    = PLATE_PATTERN.test(message) ||
-    BOOKING_KEYWORDS.some(k => message.toLowerCase().includes(k));
+  const mightNeedTool    = BOOKING_KEYWORDS.some(k => message.toLowerCase().includes(k));
 
   const toolIntent = mightNeedTool ? await detectToolIntentWithLLM(message) : null;
 
   if (toolIntent) {
-    let toolResult;
-    if (toolIntent.tool === 'checkFineStatus') {
-      toolResult = checkFineStatus(toolIntent.params.plateNumber);
-    } else if (toolIntent.tool === 'bookAppointment') {
-      toolResult = bookAppointment(toolIntent.params.service, toolIntent.params.date);
-    }
+    const toolResult = bookAppointment(toolIntent.params.service, toolIntent.params.date);
 
     let toolReply = toolResult.message;
-    if (isArabic && toolIntent.tool === 'checkFineStatus') {
-      toolReply = toolResult.unpaidTotal > 0
-        ? `لديك مبلغ ${toolResult.unpaidTotal} درهم كغرامات غير مدفوعة للوحة ${toolResult.plateNumber}.`
-        : `جميع الغرامات مدفوعة للوحة ${toolResult.plateNumber}.`;
-    }
-    if (isArabic && toolIntent.tool === 'bookAppointment') {
+    if (isArabic) {
       toolReply = toolResult.success
         ? `تم تأكيد الموعد! رقم المرجع: ${toolResult.confirmationNumber}. التاريخ: ${toolResult.date}. الموقع: ${toolResult.location}.`
         : `عذراً، ${toolResult.message}`;
@@ -688,7 +641,7 @@ app.post('/api/chat', async (req, res) => {
   const context = docs.map(d => `[${d.id}] ${d.title} (${d.emirate || 'UAE'}):\n${d.content}`).join('\n\n');
 
   const languageInstruction = isArabic
-    ? `\nالمستخدم يكتب بالعربية. يجب أن تجيب باللغة العربية الفصحى الحديثة بالكامل. احتفظ بمعرّفات السياسات مثل POL-001 باللغة الإنجليزية.`
+    ? `\nالمستخدم يكتب بالعربية. يجب أن تجيب باللغة العربية الفصحى الحديثة بالكامل. احتفظ بمعرّفات السياسات مثل POL-005 باللغة الإنجليزية.`
     : `\nRespond in English.`;
 
   const topicFocusInstruction = followUp && session.currentTopic
@@ -708,7 +661,6 @@ app.post('/api/chat', async (req, res) => {
   try {
     const rawReply = await callOllama(systemPrompt, message);
 
-    // Fix 1: sanitise output — strips non-Arabic/non-Latin chars (fixes Chinese char hallucination bug)
     const llmReply = sanitiseOutput(rawReply, isArabic);
 
     addToHistory(session, 'user', message);
@@ -725,7 +677,6 @@ app.post('/api/chat', async (req, res) => {
     });
 
   } catch (err) {
-    // Fix 4: always return full response shape on error — prevents TypeError crashes in tests
     console.error('LLM error:', err.message);
     const fallbackReply = isArabic
       ? 'عذراً، المساعد غير متاح مؤقتاً. يرجى المحاولة مرة أخرى.'
@@ -750,7 +701,7 @@ app.post('/api/chat', async (req, res) => {
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`GovMurshid v3.5.0 running at http://localhost:${PORT}`);
+  console.log(`GovMurshid v3.6.0 running at http://localhost:${PORT}`);
   console.log(`LLM: Groq API (llama-3.1-8b-instant)`);
   console.log(`Tool calling: Groq native function calling ✅`);
   console.log(`Multi-turn memory: session-based (${SESSION_MAX_TURNS} turns, 30min TTL) ✅`);
@@ -759,6 +710,7 @@ app.listen(PORT, () => {
   console.log(`Voice input: enabled ✅`);
   console.log(`Output sanitiser: enabled ✅`);
   console.log(`Arabic support: enabled ✅`);
+  console.log(`Scope: All UAE government services EXCEPT transport (see Tawfeer) ✅`);
 });
 
 module.exports = app;
