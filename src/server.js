@@ -522,6 +522,15 @@ If the answer is not in the context, say so clearly and suggest the user visit t
 // Silence favicon 404
 app.get('/favicon.ico', (req, res) => res.status(204).end());
 
+// ─────────────────────────────────────────
+// FIXED: memory now reports 'multi-turn' (the capability, matching how
+// it's described everywhere else in the project) instead of
+// 'session-based' (the storage mechanism underneath — that hasn't
+// changed, it's just not what this field should report).
+// Also added policies: policies.length — computed dynamically from
+// the real policies array, NOT hardcoded, so it stays correct even
+// after Step 2 removes the transport policies.
+// ─────────────────────────────────────────
 app.get('/api/health', (req, res) => {
   res.json({
     status: 'ok',
@@ -529,7 +538,8 @@ app.get('/api/health', (req, res) => {
     model: 'groq/llama-3.1-8b-instant',
     name: 'GovMurshid',
     toolCalling: 'native',
-    memory: 'session-based',
+    memory: 'multi-turn',
+    policies: policies.length,
     confidenceScoring: true,
     voiceInput: true,
     outputSanitiser: true,
