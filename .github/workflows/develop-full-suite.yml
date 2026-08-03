@@ -1,11 +1,14 @@
-name: Full Test Suite (develop → staging)
+name: Full Test Suite (qa → staging)
+
 
 on:
   pull_request:
     branches: [ staging ]
 
+
 env:
   GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+
 
 jobs:
   # ── Job 1: Full Playwright suite — 200 tests ──────────
@@ -14,17 +17,22 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
+
     steps:
       - uses: actions/checkout@v4
+
 
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
           cache: 'npm'
 
+
       - run: npm ci
 
+
       - run: npx playwright install --with-deps chromium
+
 
       - name: Start server
         run: |
@@ -36,8 +44,10 @@ jobs:
             sleep 3
           done
 
+
       - name: Run full Playwright suite
         run: npx playwright test
+
 
       - name: Upload report
         uses: actions/upload-artifact@v4
@@ -47,6 +57,7 @@ jobs:
           path: playwright-report/
           retention-days: 14
 
+
   # ── Job 2: RAG regression gate ────────────────────────
   regression-gate:
     name: RAG Regression Gate
@@ -54,16 +65,20 @@ jobs:
     timeout-minutes: 25
     needs: full-playwright
 
+
     steps:
       - uses: actions/checkout@v4
+
 
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
           cache: 'npm'
 
+
       - run: npm ci
       - run: npm install -g promptfoo
+
 
       - name: Start server
         run: |
@@ -73,8 +88,10 @@ jobs:
             sleep 3
           done
 
+
       - name: Run regression gate
         run: npm run eval:regression
+
 
   # ── Job 3: Red team ───────────────────────────────────
   red-team:
@@ -83,15 +100,19 @@ jobs:
     timeout-minutes: 15
     needs: full-playwright
 
+
     steps:
       - uses: actions/checkout@v4
+
 
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
           cache: 'npm'
 
+
       - run: npm ci
+
 
       - name: Start server
         run: |
@@ -100,6 +121,7 @@ jobs:
             curl -sf http://localhost:3000/api/health && break
             sleep 3
           done
+
 
       - name: Run red team
         run: npm run eval:redteam
