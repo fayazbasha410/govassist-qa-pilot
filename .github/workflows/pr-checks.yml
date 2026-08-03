@@ -1,4 +1,4 @@
-name: PR Checks
+name: PR Checks (feature → develop)
 
 
 on:
@@ -83,11 +83,17 @@ jobs:
           "
 
 
-  # ── Job 3: Smoke tests only — ~40 tests, no LLM-heavy specs ──
-  smoke-tests:
-    name: Smoke Tests
+  # ── Job 3: Boot smoke — does the app even start? ZERO Groq cost. ──
+  # Deliberately does not hit /api/chat (that's the only route that calls
+  # the LLM). /api/health and /api/policies/search are pure Node/retrieval
+  # logic, so this catches wiring bugs (bad imports, broken routes, server
+  # crash on startup) for free, on every single feature PR, without
+  # touching the Groq token budget at all. The full LLM-dependent E2E
+  # suite now runs later, at develop → qa, not here.
+  boot-smoke:
+    name: Boot Smoke
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 5
     needs: schema-validation
 
 
@@ -102,9 +108,6 @@ jobs:
 
 
       - run: npm ci
-
-
-      - run: npx playwright install --with-deps chromium
 
 
       - name: Start server
@@ -118,48 +121,23 @@ jobs:
           done
 
 
-      - name: Run smoke suite
-        run: npx playwright test tests/specs/api/health.spec.js tests/specs/api/fines.spec.js tests/specs/api/appointments.spec.js tests/specs/ui/
-
-
-      - name: Upload report
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: pr-smoke-report
-          path: playwright-report/
-          retention-days: 3
-
-
-  # ── Job 4: Guardrail smoke — fast, no LLM needed ──
-  guardrail-smoke:
-    name: Guardrail Smoke
-    runs-on: ubuntu-latest
-    timeout-minutes: 8
-    needs: schema-validation
-
-
-    steps:
-      - uses: actions/checkout@v4
-
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          cache: 'npm'
-
-
-      - run: npm ci
-
-
-      - name: Start server
+      - name: Verify /api/health responds correctly
         run: |
-          npm start &
-          for i in {1..30}; do
-            curl -sf http://localhost:3000/api/health && break
-            sleep 3
-          done
+          curl -sf http://localhost:3000/api/health -o /tmp/health_response.json
+          cat /tmp/health_response.json
+          node -e "
+          const data = JSON.parse(require('fs').readFileSync('/tmp/health_response.json', 'utf8'));
+          if (data.status !== 'ok') { console.error('Health check did not return ok'); process.exit(1); }
+          console.log('Health check OK ✅');
+          "
 
 
-      - name: Run red team smoke (guardrails only)
-        run: npm run eval:redteam
+      - name: Verify /api/policies/search responds correctly (no Groq call)
+        run: |
+          curl -sf "http://localhost:3000/api/policies/search?q=emirates+id" -o /tmp/search_response.json
+          node -e "
+          const data = JSON.parse(require('fs').readFileSync('/tmp/search_response.json', 'utf8'));
+          if (!Array.isArray(data.results)) { console.error('Search did not return a results array'); process.exit(1); }
+          if (data.results.length === 0) { console.error('Search returned zero results for a known-good query'); process.exit(1); }
+          console.log('Policy search OK ✅ (' + data.results.length + ' results)');
+          "
