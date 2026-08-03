@@ -9,7 +9,7 @@ GovMurshid is a UAE government services AI assistant covering all 7 emirates. It
 
 ## What it does
 
-- Answers UAE government service questions grounded in 55 policy documents
+- Answers UAE government service questions grounded in 55 policy documents.
 - Executes tool calls for traffic fine checks and appointment booking
 - Supports English and Arabic — detection, retrieval, and responses
 - Blocks prompt injection, jailbreaks, and off-topic requests
