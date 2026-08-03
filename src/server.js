@@ -13,6 +13,7 @@ const { checkGuardrails } = require('./lib/guardrails');
 const { sanitiseOutput } = require('./lib/sanitizer');
 const { generateWithGuardrails } = require('./lib/outputGuardrails');
 const { createSessionStore } = require('./lib/session');
+const { translateArabicQuery } = require('./lib/arabicTranslation');
 
 
 const app = express();
@@ -30,92 +31,6 @@ app.use(express.static(path.join(__dirname, '../public')));
 
 const sessionStore = createSessionStore();
 sessionStore.startCleanupInterval();
-
-
-// ─────────────────────────────────────────
-// ARABIC QUERY TRANSLATION
-// (kept inline — large static dictionary, not really "logic" to unit
-// test beyond a couple of representative cases handled in the RAG
-// engine tests via already-translated queries)
-// ─────────────────────────────────────────
-
-
-function translateArabicQuery(text) {
-  const translations = {
-    'الهوية الإماراتية':                 'Emirates ID',
-    'بطاقة الهوية':                      'Emirates ID',
-    'هوية':                              'Emirates ID',
-    'تأشيرة الإقامة':                    'residency visa',
-    'تأشيرة':                            'visa',
-    'إقامة ذهبية':                       'golden visa',
-    'الإقامة الذهبية':                   'golden visa',
-    'فيزا ذهبية':                        'golden visa',
-    'التقدم للحصول على الإقامة الذهبية': 'golden visa eligibility investors entrepreneurs',
-    'إقامة':                             'residency',
-    'جواز سفر':                          'passport',
-    'شهادة ميلاد':                       'birth certificate',
-    'التأمين الصحي إلزامي':              'health insurance mandatory DHA employer',
-    'التأمين الصحي':                     'health insurance DHA',
-    'تأمين صحي':                         'health insurance',
-    'تأمين':                             'insurance',
-    'صحي':                               'health',
-    'إلزامي':                            'mandatory required',
-    'لياقة طبية':                        'medical fitness',
-    'فحص طبي':                           'medical fitness',
-    'شهادة لياقة':                       'medical fitness certificate',
-    'مدرسة':                             'school',
-    'تعليم':                             'education',
-    'تسجيل مدرسي':                       'school enrollment',
-    'التسجيل في المدرسة':                'school enrollment KHDA',
-    'عقد الإيجار':                       'tenancy contract',
-    'عقد إيجار':                         'tenancy contract',
-    'إيجار':                             'tenancy rental',
-    'إيجاري':                            'Ejari',
-    'توثيق':                             'Tawtheeq',
-    'تسجيل عقد الإيجار':                 'tenancy contract registration Ejari',
-    'ترخيص تجاري':                       'trade license',
-    'رخصة تجارية':                       'trade license',
-    'ضريبة القيمة المضافة':              'VAT Federal Tax Authority',
-    'ضريبة':                             'VAT tax',
-    'عمل حر':                            'freelance permit',
-    'فريلانس':                           'freelance',
-    'دعم اجتماعي':                       'social support',
-    'زكاة':                              'Zakat',
-    'معاش':                              'pension gratuity',
-    'مكافأة نهاية الخدمة':               'end of service gratuity',
-    'نهاية الخدمة':                      'end of service gratuity',
-    'ذوي الهمم':                         'people of determination disability',
-    'كهرباء':                            'electricity DEWA ADDC',
-    'ماء':                               'water utility',
-    'حجز موعد':                          'book appointment',
-    'موعد':                              'appointment',
-    'الإمارات':                          'UAE emirates',
-    'أبوظبي':                            'Abu Dhabi',
-    'دبي':                               'Dubai',
-    'الشارقة':                           'Sharjah',
-    'عجمان':                             'Ajman',
-    'رأس الخيمة':                        'Ras Al Khaimah',
-    'الفجيرة':                           'Fujairah',
-    'أم القيوين':                        'Umm Al Quwain',
-    'كيف': '', 'ما هي': '', 'ما هو': '', 'هل': '', 'من': '',
-    'متى': '', 'أين': '', 'في': '', 'على': '', 'من يحق له': '',
-    'يحق له': '', 'للحصول على': '', 'التقدم': '',
-    'أسجل': 'registration', 'أجدد': 'renewal',
-    'أحصل': '', 'يمكنني': '', 'أريد': '',
-  };
-
-
-  let translated = text;
-  const sortedEntries = Object.entries(translations).sort((a, b) => b[0].length - a[0].length);
-  for (const [arabic, english] of sortedEntries) {
-    translated = translated.replace(new RegExp(arabic, 'g'), english);
-  }
-  return translated
-    .replace(/[\u0600-\u06FF]+/g, '')
-    .replace(/[؟،]/g, '')
-    .replace(/\s+/g, ' ')
-    .trim();
-}
 
 
 // ─────────────────────────────────────────
@@ -241,7 +156,7 @@ app.get('/favicon.ico', (req, res) => res.status(204).end());
 app.get('/api/health', (req, res) => {
   res.json({
     status: 'ok',
-    version: '3.9.0',
+    version: '3.10.0',
     model: 'groq/llama-3.1-8b-instant',
     name: 'GovMurshid',
     toolCalling: 'native',
@@ -462,6 +377,7 @@ app.post('/api/chat', async (req, res) => {
         wasFiltered: guardResult.wasFiltered,
         grounded: guardResult.grounded,
         citedIds: guardResult.citedIds,
+        unknownIds: guardResult.unknownIds,
       },
       retrievedDocs: docs.map(d => ({ id: d.id, title: d.title, score: d.score, emirate: d.emirate })),
       toolUsed: null,
@@ -499,7 +415,7 @@ app.post('/api/chat', async (req, res) => {
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`GovMurshid v3.9.0 running at http://localhost:${PORT}`);
+  console.log(`GovMurshid v3.10.0 running at http://localhost:${PORT}`);
   console.log(`LLM: Groq API (llama-3.1-8b-instant)`);
   console.log(`Tool calling: Groq native function calling ✅`);
   console.log(`Multi-turn memory: session-based (${sessionStore.maxTurns} turns, ${sessionStore.ttlMs / 60000}min TTL) ✅`);

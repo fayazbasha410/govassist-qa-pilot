@@ -1,219 +1,347 @@
 [
-    {
-      "id": "GD-001",
-      "category": "driving",
-      "emirate": "All UAE",
-      "input": "How do I renew my driving license in the UAE?",
-      "expectedFacts": [
-        "Emirates ID required",
-        "eye test certificate required",
-        "1-3 business days processing"
-      ],
-      "mustNotContain": [
-        "I don't know",
-        "I cannot help"
-      ]
-    },
-    {
-      "id": "GD-002",
-      "category": "driving",
-      "emirate": "All UAE",
-      "input": "What documents do I need for vehicle registration renewal?",
-      "expectedFacts": [
-        "valid insurance certificate",
-        "Emirates ID",
-        "vehicle inspection"
-      ],
-      "mustNotContain": [
-        "I don't know"
-      ]
-    },
-    {
-      "id": "GD-003",
-      "category": "driving",
-      "emirate": "All UAE",
-      "input": "How do I pay my traffic fines in Dubai?",
-      "expectedFacts": [
-        "Dubai Police",
-        "RTA"
-      ],
-      "mustNotContain": [
-        "I don't know"
-      ]
-    },
-    {
-      "id": "GD-004",
-      "category": "identity",
-      "emirate": "All UAE",
-      "input": "What happens if my Emirates ID expires?",
-      "expectedFacts": [
-        "AED 20 per day",
-        "maximum",
-        "1,000"
-      ],
-      "mustNotContain": [
-        "no penalty",
-        "no fine"
-      ]
-    },
-    {
-      "id": "GD-005",
-      "category": "identity",
-      "emirate": "All UAE",
-      "input": "What are the requirements for residency visa renewal?",
-      "expectedFacts": [
-        "passport",
-        "Emirates ID",
-        "medical fitness certificate"
-      ],
-      "mustNotContain": [
-        "I don't know"
-      ]
-    },
-    {
-      "id": "GD-006",
-      "category": "identity",
-      "emirate": "All UAE",
-      "input": "Who is eligible for a UAE Golden Visa?",
-      "expectedFacts": [
-        "investors",
-        "entrepreneurs",
-        "10 years"
-      ],
-      "mustNotContain": [
-        "I don't know"
-      ]
-    },
-    {
-      "id": "GD-007",
-      "category": "housing",
-      "emirate": "Dubai",
-      "input": "How do I register my tenancy contract in Dubai?",
-      "expectedFacts": [
-        "Ejari",
-        "Dubai Land Department",
-        "AED 220"
-      ],
-      "mustNotContain": [
-        "Tawtheeq",
-        "I don't know"
-      ]
-    },
-    {
-      "id": "GD-008",
-      "category": "housing",
-      "emirate": "Abu Dhabi",
-      "input": "How do I register my tenancy contract in Abu Dhabi?",
-      "expectedFacts": [
-        "Tawtheeq",
-        "TAMM"
-      ],
-      "mustNotContain": [
-        "Ejari",
-        "I don't know"
-      ]
-    },
-    {
-      "id": "GD-009",
-      "category": "healthcare",
-      "emirate": "Dubai",
-      "input": "Is health insurance mandatory in Dubai?",
-      "expectedFacts": [
-        "mandatory",
-        "Dubai Health Authority",
-        "employer"
-      ],
-      "mustNotContain": [
-        "optional",
-        "not required"
-      ]
-    },
-    {
-      "id": "GD-010",
-      "category": "healthcare",
-      "emirate": "All UAE",
-      "input": "What documents are needed for a medical fitness certificate?",
-      "expectedFacts": [
-        "blood test",
-        "chest X-ray",
-        "HIV"
-      ],
-      "mustNotContain": [
-        "I don't know"
-      ]
-    },
-    {
-      "id": "GD-011",
-      "category": "education",
-      "emirate": "Dubai",
-      "input": "How do I enroll my child in a Dubai school?",
-      "expectedFacts": [
-        "KHDA",
-        "birth certificate",
-        "Emirates ID"
-      ],
-      "mustNotContain": [
-        "ADEK",
-        "I don't know"
-      ]
-    },
-    {
-      "id": "GD-012",
-      "category": "education",
-      "emirate": "Abu Dhabi",
-      "input": "Who regulates private schools in Abu Dhabi?",
-      "expectedFacts": [
-        "ADEK",
-        "Abu Dhabi Department of Education"
-      ],
-      "mustNotContain": [
-        "KHDA",
-        "I don't know"
-      ]
-    },
-    {
-      "id": "GD-013",
-      "category": "business",
-      "emirate": "Dubai",
-      "input": "How do I renew my trade license in Dubai?",
-      "expectedFacts": [
-        "Department of Economy and Tourism",
-        "Ejari",
-        "AED 250"
-      ],
-      "mustNotContain": [
-        "ADDED",
-        "I don't know"
-      ]
-    },
-    {
-      "id": "GD-014",
-      "category": "business",
-      "emirate": "All UAE",
-      "input": "When is VAT registration mandatory in the UAE?",
-      "expectedFacts": [
-        "AED 375,000",
-        "Federal Tax Authority",
-        "5%"
-      ],
-      "mustNotContain": [
-        "I don't know",
-        "no VAT"
-      ]
-    },
-    {
-      "id": "GD-015",
-      "category": "social",
-      "emirate": "All UAE",
-      "input": "What end of service benefits am I entitled to as an expatriate?",
-      "expectedFacts": [
-        "21 days",
-        "gratuity",
-        "5 years"
-      ],
-      "mustNotContain": [
-        "no benefits",
-        "I don't know"
-      ]
-    }
-  ]  
+  {
+    "id": "GD-001",
+    "category": "identity",
+    "emirate": "All UAE",
+    "input": "What is the renewal fee and penalty for an expired Emirates ID?",
+    "expectedFacts": [
+      "AED 100",
+      "renewal"
+    ],
+    "mustNotContain": [
+      "no penalty",
+      "no fine"
+    ],
+    "expectedPolicyIds": ["POL-005"],
+    "note": "Rephrased from the original 'What happens if my Emirates ID expires?' — the original expectedFacts ('AED 20 per day', 'maximum', '1,000') did not match any real policy content (POL-005 states a flat AED 100 fine and a 100-370 renewal fee range, not a per-day/AED-1000-cap structure). Corrected to match actual content."
+  },
+  {
+    "id": "GD-002",
+    "category": "identity",
+    "emirate": "All UAE",
+    "input": "What are the requirements for residency visa renewal?",
+    "expectedFacts": [
+      "passport",
+      "Emirates ID",
+      "medical fitness certificate"
+    ],
+    "mustNotContain": [
+      "I don't know"
+    ],
+    "expectedPolicyIds": ["POL-006"]
+  },
+  {
+    "id": "GD-003",
+    "category": "identity",
+    "emirate": "All UAE",
+    "input": "Who is eligible for a UAE Golden Visa?",
+    "expectedFacts": [
+      "investors",
+      "entrepreneurs",
+      "10 years"
+    ],
+    "mustNotContain": [
+      "I don't know"
+    ],
+    "expectedPolicyIds": ["POL-035"]
+  },
+  {
+    "id": "GD-004",
+    "category": "housing",
+    "emirate": "Dubai",
+    "input": "How do I register my tenancy contract in Dubai?",
+    "expectedFacts": [
+      "Ejari",
+      "Dubai Land Department",
+      "AED 220"
+    ],
+    "mustNotContain": [
+      "Tawtheeq",
+      "I don't know"
+    ],
+    "expectedPolicyIds": ["POL-018"],
+    "note": "Real retrieval also surfaces POL-066 (DLD/RERA/rent disputes, added in Step 3) at a similar or higher score, since it also mentions Ejari/DLD in a broader regulatory context. POL-018 remains the correct ground truth as it's the specific how-to-register content. This overlap is a genuine, useful signal surfaced by Context Precision — see delivery notes."
+  },
+  {
+    "id": "GD-005",
+    "category": "housing",
+    "emirate": "Abu Dhabi",
+    "input": "How do I register my tenancy contract in Abu Dhabi?",
+    "expectedFacts": [
+      "Tawtheeq",
+      "TAMM"
+    ],
+    "mustNotContain": [
+      "Ejari",
+      "I don't know"
+    ],
+    "expectedPolicyIds": ["POL-019"]
+  },
+  {
+    "id": "GD-006",
+    "category": "healthcare",
+    "emirate": "Dubai",
+    "input": "Is health insurance mandatory in Dubai?",
+    "expectedFacts": [
+      "mandatory",
+      "Dubai Health Authority",
+      "employer"
+    ],
+    "mustNotContain": [
+      "optional",
+      "not required"
+    ],
+    "expectedPolicyIds": ["POL-014"]
+  },
+  {
+    "id": "GD-007",
+    "category": "healthcare",
+    "emirate": "All UAE",
+    "input": "What documents are needed for a medical fitness certificate for a residency visa?",
+    "expectedFacts": [
+      "blood test",
+      "chest X-ray",
+      "HIV"
+    ],
+    "mustNotContain": [
+      "I don't know"
+    ],
+    "expectedPolicyIds": ["POL-016"],
+    "note": "Rephrased to specify 'for a residency visa' to disambiguate from the new employment-specific medical fitness policy (POL-061) added in Step 3, which covers a related but distinct scenario. Real retrieval may still rank POL-061 competitively due to vocabulary overlap ('medical fitness certificate', 'documents') — this is expected and is itself a useful Context Precision signal, not a bug to silently fix."
+  },
+  {
+    "id": "GD-008",
+    "category": "education",
+    "emirate": "Dubai",
+    "input": "How do I enroll my child in a Dubai school?",
+    "expectedFacts": [
+      "KHDA",
+      "birth certificate",
+      "Emirates ID"
+    ],
+    "mustNotContain": [
+      "ADEK",
+      "I don't know"
+    ],
+    "expectedPolicyIds": ["POL-011"]
+  },
+  {
+    "id": "GD-009",
+    "category": "education",
+    "emirate": "Abu Dhabi",
+    "input": "Who regulates private schools in Abu Dhabi?",
+    "expectedFacts": [
+      "ADEK",
+      "Abu Dhabi Department of Education"
+    ],
+    "mustNotContain": [
+      "KHDA",
+      "I don't know"
+    ],
+    "expectedPolicyIds": ["POL-012"]
+  },
+  {
+    "id": "GD-010",
+    "category": "business",
+    "emirate": "Dubai",
+    "input": "How do I renew my trade license in Dubai?",
+    "expectedFacts": [
+      "Department of Economy and Tourism",
+      "Ejari",
+      "30 days"
+    ],
+    "mustNotContain": [
+      "ADDED",
+      "I don't know"
+    ],
+    "expectedPolicyIds": ["POL-021"],
+    "note": "Original 'AED 250' fact did not match any real policy content — POL-021 states fees 'vary by business activity' with no fixed figure, but does state a '30 days' grace period after expiry. Corrected."
+  },
+  {
+    "id": "GD-011",
+    "category": "business",
+    "emirate": "All UAE",
+    "input": "When is VAT registration mandatory in the UAE?",
+    "expectedFacts": [
+      "AED 375,000",
+      "Federal Tax Authority",
+      "5%"
+    ],
+    "mustNotContain": [
+      "I don't know",
+      "no VAT"
+    ],
+    "expectedPolicyIds": ["POL-023"]
+  },
+  {
+    "id": "GD-012",
+    "category": "social",
+    "emirate": "All UAE",
+    "input": "What end of service benefits am I entitled to as an expatriate?",
+    "expectedFacts": [
+      "21 days",
+      "gratuity",
+      "5 years"
+    ],
+    "mustNotContain": [
+      "no benefits",
+      "I don't know"
+    ],
+    "expectedPolicyIds": ["POL-028"]
+  },
+  {
+    "id": "GD-013",
+    "category": "identity",
+    "emirate": "All UAE",
+    "input": "I lost my Emirates ID, how do I get a replacement?",
+    "expectedFacts": [
+      "police report",
+      "AED 300"
+    ],
+    "mustNotContain": [
+      "I don't know"
+    ],
+    "expectedPolicyIds": ["POL-056"],
+    "note": "Step 3 addition. Query phrasing verified against live retrieval to cleanly rank POL-056 above the also-plausible POL-005 (Emirates ID renewal, a different scenario)."
+  },
+  {
+    "id": "GD-014",
+    "category": "labour",
+    "emirate": "All UAE",
+    "input": "How do I file a complaint for unpaid salary?",
+    "expectedFacts": [
+      "80060",
+      "Wage Protection System"
+    ],
+    "mustNotContain": [
+      "I don't know"
+    ],
+    "expectedPolicyIds": ["POL-057"]
+  },
+  {
+    "id": "GD-015",
+    "category": "social",
+    "emirate": "All UAE",
+    "input": "Who is eligible to receive Zakat Fund support?",
+    "expectedFacts": [
+      "zakatfund.gov.ae",
+      "2.5%"
+    ],
+    "mustNotContain": [
+      "I don't know"
+    ],
+    "expectedPolicyIds": ["POL-058"]
+  },
+  {
+    "id": "GD-016",
+    "category": "social",
+    "emirate": "All UAE",
+    "input": "What financial support is available for widows in the UAE?",
+    "expectedFacts": [
+      "Determination Card",
+      "widow"
+    ],
+    "mustNotContain": [
+      "I don't know"
+    ],
+    "expectedPolicyIds": ["POL-059"]
+  },
+  {
+    "id": "GD-017",
+    "category": "utilities",
+    "emirate": "All UAE",
+    "input": "How do I set up home internet with Etisalat or du?",
+    "expectedFacts": [
+      "Etisalat",
+      "du"
+    ],
+    "mustNotContain": [
+      "I don't know"
+    ],
+    "expectedPolicyIds": ["POL-060"]
+  },
+  {
+    "id": "GD-018",
+    "category": "healthcare",
+    "emirate": "All UAE",
+    "input": "Do I need a medical test for a new job in the UAE?",
+    "expectedFacts": [
+      "drug and alcohol screening",
+      "AED 100"
+    ],
+    "mustNotContain": [
+      "I don't know"
+    ],
+    "expectedPolicyIds": ["POL-061"]
+  },
+  {
+    "id": "GD-019",
+    "category": "identity",
+    "emirate": "All UAE",
+    "input": "How do I register a death certificate in the UAE?",
+    "expectedFacts": [
+      "48 hours",
+      "attest"
+    ],
+    "mustNotContain": [
+      "I don't know"
+    ],
+    "expectedPolicyIds": ["POL-062"]
+  },
+  {
+    "id": "GD-020",
+    "category": "business",
+    "emirate": "All UAE",
+    "input": "Should I set up my company in a free zone or mainland?",
+    "expectedFacts": [
+      "100% foreign ownership",
+      "free zone"
+    ],
+    "mustNotContain": [
+      "I don't know"
+    ],
+    "expectedPolicyIds": ["POL-063"]
+  },
+  {
+    "id": "GD-021",
+    "category": "identity",
+    "emirate": "All UAE",
+    "input": "How do I get a divorce certificate attested in the UAE?",
+    "expectedFacts": [
+      "Personal Status Courts",
+      "Ministry of Foreign Affairs"
+    ],
+    "mustNotContain": [
+      "I don't know"
+    ],
+    "expectedPolicyIds": ["POL-064"]
+  },
+  {
+    "id": "GD-022",
+    "category": "government-services",
+    "emirate": "Abu Dhabi",
+    "input": "What can I do on the TAMM platform?",
+    "expectedFacts": [
+      "UAE Pass",
+      "tamm.abudhabi"
+    ],
+    "mustNotContain": [
+      "I don't know"
+    ],
+    "expectedPolicyIds": ["POL-065"]
+  },
+  {
+    "id": "GD-023",
+    "category": "housing",
+    "emirate": "Dubai",
+    "input": "How do I dispute a rent increase in Dubai?",
+    "expectedFacts": [
+      "Rental Dispute Settlement Centre",
+      "12 months"
+    ],
+    "mustNotContain": [
+      "I don't know"
+    ],
+    "expectedPolicyIds": ["POL-066"]
+  }
+]

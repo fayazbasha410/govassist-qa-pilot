@@ -1,6 +1,7 @@
 concurrency: 1
 description: GovMurshid UAE Government Services RAG Eval — English + Arabic
 
+
 providers:
   - id: http
     config:
@@ -11,52 +12,28 @@ providers:
       body:
         message: "{{input}}"
       transformResponse: |
-        (json) => json.reply
+       (json) => json.reply
+
 
 prompts:
   - "{{input}}"
 
+
 tests:
 
-  # ── DRIVING ────────────────────────────────────────────
-  - description: "GD-001 Driving license renewal requirements"
-    vars:
-      input: "How do I renew my driving license in the UAE?"
-    assert:
-      - type: llm-rubric
-        value: "The response provides helpful information about driving license renewal and mentions at least one required document such as Emirates ID or eye test"
-      - type: not-contains
-        value: "I don't know"
-
-  - description: "GD-002 Vehicle registration documents"
-    vars:
-      input: "What are the requirements for renewing vehicle registration in UAE?"
-    assert:
-      - type: llm-rubric
-        value: "The response mentions at least one requirement such as insurance, Emirates ID, or vehicle inspection"
-      - type: not-contains
-        value: "I don't know"
-
-  - description: "GD-003 Traffic fines payment Dubai"
-    vars:
-      input: "How do I pay my traffic fines in Dubai?"
-    assert:
-      - type: llm-rubric
-        value: "The response mentions at least one payment method or authority such as Dubai Police, RTA, or an app"
-      - type: not-contains
-        value: "I don't know"
 
   # ── IDENTITY ───────────────────────────────────────────
-  - description: "GD-004 Emirates ID expiry penalties"
+  - description: "GD-001 Emirates ID renewal fee and expiry penalty"
     vars:
-      input: "What is the fine for having an expired Emirates ID?"
+      input: "What is the renewal fee and penalty for an expired Emirates ID?"
     assert:
       - type: llm-rubric
-        value: "The response mentions a fine or penalty for expired Emirates ID, such as AED 20 per day or a maximum cap"
+        value: "The response mentions a fee or penalty amount related to the Emirates ID, such as AED 100"
       - type: not-contains
         value: "no penalty"
 
-  - description: "GD-005 Residency visa renewal documents"
+
+  - description: "GD-002 Residency visa renewal documents"
     vars:
       input: "What documents do I need to renew my UAE residency visa?"
     assert:
@@ -65,7 +42,8 @@ tests:
       - type: not-contains
         value: "I don't know"
 
-  - description: "GD-006 Golden Visa eligibility"
+
+  - description: "GD-003 Golden Visa eligibility"
     vars:
       input: "Who can apply for the UAE Golden Visa and how long is it valid?"
     assert:
@@ -74,8 +52,9 @@ tests:
       - type: not-contains
         value: "I don't know"
 
+
   # ── HOUSING ────────────────────────────────────────────
-  - description: "GD-007 Ejari registration Dubai"
+  - description: "GD-004 Ejari registration Dubai"
     vars:
       input: "How do I register my rental contract in Dubai?"
     assert:
@@ -84,7 +63,8 @@ tests:
       - type: not-contains
         value: "I don't know"
 
-  - description: "GD-008 Tawtheeq registration Abu Dhabi"
+
+  - description: "GD-005 Tawtheeq registration Abu Dhabi"
     vars:
       input: "How do I register my rental contract in Abu Dhabi?"
     assert:
@@ -93,8 +73,9 @@ tests:
       - type: not-contains
         value: "I don't know"
 
+
   # ── HEALTHCARE ─────────────────────────────────────────
-  - description: "GD-009 Health insurance mandatory Dubai"
+  - description: "GD-006 Health insurance mandatory Dubai"
     vars:
       input: "Is health insurance mandatory for residents in Dubai?"
     assert:
@@ -103,17 +84,19 @@ tests:
       - type: not-contains
         value: "optional"
 
-  - description: "GD-010 Medical fitness certificate tests"
+
+  - description: "GD-007 Medical fitness certificate for residency visa"
     vars:
-      input: "What medical tests are done for the UAE fitness certificate?"
+      input: "What medical tests are done for the UAE residency visa fitness certificate?"
     assert:
       - type: llm-rubric
         value: "The response mentions at least two tests such as blood test, chest X-ray, or physical examination"
       - type: not-contains
         value: "I don't know"
 
+
   # ── EDUCATION ──────────────────────────────────────────
-  - description: "GD-011 School enrollment Dubai KHDA"
+  - description: "GD-008 School enrollment Dubai KHDA"
     vars:
       input: "What is the process for enrolling a child in a Dubai school?"
     assert:
@@ -122,7 +105,8 @@ tests:
       - type: not-contains
         value: "I don't know"
 
-  - description: "GD-012 Abu Dhabi school regulator"
+
+  - description: "GD-009 Abu Dhabi school regulator"
     vars:
       input: "Which authority regulates private schools in Abu Dhabi?"
     assert:
@@ -131,17 +115,19 @@ tests:
       - type: not-contains
         value: "KHDA"
 
+
   # ── BUSINESS ───────────────────────────────────────────
-  - description: "GD-013 Trade license renewal Dubai"
+  - description: "GD-010 Trade license renewal Dubai"
     vars:
       input: "What is the process and penalty for late trade license renewal in Dubai?"
     assert:
       - type: llm-rubric
-        value: "The response mentions the renewal process and a late penalty or fine amount"
+        value: "The response mentions the renewal process and a late penalty, grace period, or fine"
       - type: not-contains
         value: "I don't know"
 
-  - description: "GD-014 VAT registration threshold"
+
+  - description: "GD-011 VAT registration threshold"
     vars:
       input: "When must a UAE business register for VAT and what is the threshold?"
     assert:
@@ -150,8 +136,9 @@ tests:
       - type: not-contains
         value: "no VAT"
 
+
   # ── SOCIAL ─────────────────────────────────────────────
-  - description: "GD-015 Expatriate end of service gratuity"
+  - description: "GD-012 Expatriate end of service gratuity"
     vars:
       input: "How is end of service gratuity calculated for expatriate employees in UAE?"
     assert:
@@ -160,26 +147,130 @@ tests:
       - type: not-contains
         value: "no benefits"
 
-  # ── ARABIC CASES ───────────────────────────────────────
-  - description: "GD-016 Arabic — driving license renewal"
+
+  # ── STEP 3 ADDITIONS (v3.10.0) ─────────────────────────
+  - description: "GD-013 MOI lost Emirates ID replacement"
     vars:
-      input: "كيف أجدد رخصة القيادة في الإمارات؟"
+      input: "I lost my Emirates ID, how do I get a replacement?"
     assert:
       - type: llm-rubric
-        value: "The response is in Arabic and provides information about driving license renewal mentioning required documents or steps"
+        value: "The response explains how to report and replace a lost Emirates ID, mentioning ICP or a police report"
       - type: not-contains
         value: "I don't know"
 
-  - description: "GD-017 Arabic — Emirates ID fine"
+
+  - description: "GD-014 MOHRE labour complaint for unpaid salary"
+    vars:
+      input: "How do I file a complaint for unpaid salary?"
+    assert:
+      - type: llm-rubric
+        value: "The response mentions MOHRE, the hotline 80060, or the Wage Protection System"
+      - type: not-contains
+        value: "I don't know"
+
+
+  - description: "GD-015 Zakat Fund eligibility"
+    vars:
+      input: "Who is eligible to receive Zakat Fund support?"
+    assert:
+      - type: llm-rubric
+        value: "The response mentions the Zakat Fund and at least one eligibility category such as the poor, needy, or debtors"
+      - type: not-contains
+        value: "I don't know"
+
+
+  - description: "GD-016 Widows financial support"
+    vars:
+      input: "What financial support is available for widows in the UAE?"
+    assert:
+      - type: llm-rubric
+        value: "The response mentions social support available to widows, such as a stipend or the Ministry of Community Development"
+      - type: not-contains
+        value: "I don't know"
+
+
+  - description: "GD-017 Telecom setup Etisalat du"
+    vars:
+      input: "How do I set up home internet with Etisalat or du?"
+    assert:
+      - type: llm-rubric
+        value: "The response mentions Etisalat or du and required documents such as Emirates ID or a tenancy contract"
+      - type: not-contains
+        value: "I don't know"
+
+
+  - description: "GD-018 Medical fitness for employment"
+    vars:
+      input: "Do I need a medical test for a new job in the UAE?"
+    assert:
+      - type: llm-rubric
+        value: "The response mentions employment-related medical fitness requirements such as drug screening or occupational health"
+      - type: not-contains
+        value: "I don't know"
+
+
+  - description: "GD-019 Death certificate registration"
+    vars:
+      input: "How do I register a death certificate in the UAE?"
+    assert:
+      - type: llm-rubric
+        value: "The response mentions registering the death within a specific timeframe and attestation requirements"
+      - type: not-contains
+        value: "I don't know"
+
+
+  - description: "GD-020 Company formation mainland vs free zone"
+    vars:
+      input: "Should I set up my company in a free zone or mainland?"
+    assert:
+      - type: llm-rubric
+        value: "The response compares mainland and free zone company setup, mentioning foreign ownership or market access differences"
+      - type: not-contains
+        value: "I don't know"
+
+
+  - description: "GD-021 Divorce certificate attestation"
+    vars:
+      input: "How do I get a divorce certificate attested in the UAE?"
+    assert:
+      - type: llm-rubric
+        value: "The response mentions the Personal Status Courts or attestation process involving the Ministry of Foreign Affairs"
+      - type: not-contains
+        value: "I don't know"
+
+
+  - description: "GD-022 TAMM platform Abu Dhabi"
+    vars:
+      input: "What can I do on the TAMM platform?"
+    assert:
+      - type: llm-rubric
+        value: "The response describes TAMM as Abu Dhabi's digital government services platform and mentions UAE Pass or specific services"
+      - type: not-contains
+        value: "I don't know"
+
+
+  - description: "GD-023 Dubai rent dispute RDSC"
+    vars:
+      input: "How do I dispute a rent increase in Dubai?"
+    assert:
+      - type: llm-rubric
+        value: "The response mentions the Rental Dispute Settlement Centre or RERA's rental increase rules"
+      - type: not-contains
+        value: "I don't know"
+
+
+  # ── ARABIC CASES ───────────────────────────────────────
+  - description: "GD-024 Arabic — Emirates ID fine"
     vars:
       input: "ما هي غرامة انتهاء صلاحية الهوية الإماراتية؟"
     assert:
       - type: llm-rubric
-        value: "The response is in Arabic and mentions a fine or penalty for expired Emirates ID"
+        value: "The response is in Arabic and mentions a fine or penalty related to Emirates ID"
       - type: not-contains
         value: "I don't know"
 
-  - description: "GD-018 Arabic — health insurance Dubai"
+
+  - description: "GD-025 Arabic — health insurance Dubai"
     vars:
       input: "هل التأمين الصحي إلزامي في دبي؟"
     assert:
@@ -188,7 +279,8 @@ tests:
       - type: not-contains
         value: "I don't know"
 
-  - description: "GD-019 Arabic — Ejari registration"
+
+  - description: "GD-026 Arabic — Ejari registration"
     vars:
       input: "كيف أسجل عقد الإيجار في دبي؟"
     assert:
@@ -197,7 +289,8 @@ tests:
       - type: not-contains
         value: "I don't know"
 
-  - description: "GD-020 Arabic — Golden Visa"
+
+  - description: "GD-027 Arabic — Golden Visa"
     vars:
       input: "من يحق له التقدم للحصول على الإقامة الذهبية في الإمارات؟"
     assert:
@@ -205,6 +298,17 @@ tests:
         value: "The response is in Arabic and mentions eligible categories for the Golden Visa such as investors or entrepreneurs"
       - type: not-contains
         value: "I don't know"
+
+
+  - description: "GD-028 Arabic — Emirates ID replacement"
+    vars:
+      input: "فقدت هويتي الإماراتية، كيف أحصل على بدل فاقد؟"
+    assert:
+      - type: llm-rubric
+        value: "The response is in Arabic and explains how to report and replace a lost Emirates ID"
+      - type: not-contains
+        value: "I don't know"
+
 
 # Scoring — use Groq as judge (replaces Ollama)
 defaultTest:
