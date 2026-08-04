@@ -156,7 +156,7 @@ app.get('/favicon.ico', (req, res) => res.status(204).end());
 app.get('/api/health', (req, res) => {
   res.json({
     status: 'ok',
-    version: '3.10.0',
+    version: '3.12.0',
     model: 'groq/llama-3.1-8b-instant',
     name: 'GovMurshid',
     toolCalling: 'native',
@@ -236,9 +236,22 @@ app.post('/api/chat', async (req, res) => {
   const session = sessionStore.getSession(sid);
 
 
+  // v3.11.0 FIX: capture the session's PRIOR topic/emirate before this
+  // turn's detection overwrites them. Previously, incomingTopic/incomingEmirate
+  // were written into session.currentTopic/currentEmirate BEFORE the
+  // followUp check ran, so a message's own topic keywords (e.g. "Emirates
+  // ID" matching the visa group) made it look like there was already an
+  // established topic — causing the very first message of a session to be
+  // misread as a follow-up and its RAG query truncated to bare topic
+  // keywords. Confirmed via a real promptfoo eval run where 28/28 cases
+  // failed; root-caused to this exact ordering bug.
+  const priorTopic   = session.currentTopic;
+  const priorEmirate = session.currentEmirate;
+
+
   const incomingTopic   = detectTopicGroup(message);
   const incomingEmirate = detectEmirate(message);
-  const topicChanged    = incomingTopic && session.currentTopic && incomingTopic !== session.currentTopic;
+  const topicChanged    = incomingTopic && priorTopic && incomingTopic !== priorTopic;
 
 
   if (incomingTopic)   session.currentTopic   = incomingTopic;
@@ -254,7 +267,7 @@ app.post('/api/chat', async (req, res) => {
 
 
   // ── 4. Follow-up enrichment ────────────────────────────────────────
-  const followUp = isFollowUp(message) && (session.currentTopic || session.currentEmirate);
+  const followUp = isFollowUp(message) && (priorTopic || priorEmirate);
   let retrievalMessage = message;
   if (followUp) retrievalMessage = enrichFollowUp(message, session);
 
@@ -268,6 +281,22 @@ app.post('/api/chat', async (req, res) => {
 
 
   if (toolIntent) {
+    // Tool Correctness check (v3.12.0) — native, deterministic equivalent of
+    // DeepEval's ToolCorrectnessMetric parameter validation. Checks the
+    // LLM-extracted params are well-formed BEFORE execution, independent of
+    // whether the booking itself succeeds/fails on business logic (e.g. a
+    // fully-booked date). This is a proportionate scope for GovMurshid's
+    // single-tool, non-chained architecture — not a full agent trace tree.
+    const VALID_SERVICES = ['emirates-id', 'residency-visa', 'health-card'];
+    const DATE_FORMAT = /^\d{4}-\d{2}-\d{2}$/;
+    const toolCorrectness = {
+      toolNameValid: toolIntent.tool === 'bookAppointment',
+      serviceParamValid: VALID_SERVICES.includes(toolIntent.params?.service),
+      dateParamValid: DATE_FORMAT.test(toolIntent.params?.date || ''),
+    };
+    toolCorrectness.allValid = toolCorrectness.toolNameValid && toolCorrectness.serviceParamValid && toolCorrectness.dateParamValid;
+
+
     const toolResult = bookAppointment(toolIntent.params.service, toolIntent.params.date);
 
 
@@ -288,6 +317,17 @@ app.post('/api/chat', async (req, res) => {
       guardrail: { triggered: false },
       retrievedDocs: [],
       toolUsed: { name: toolIntent.tool, params: toolIntent.params, result: toolResult },
+      trace: {
+        spans: [
+          {
+            type: 'tool',
+            name: toolIntent.tool,
+            input: toolIntent.params,
+            output: toolResult,
+            correctness: toolCorrectness,
+          },
+        ],
+      },
       language: isArabic ? 'ar' : 'en',
       memory: { turns: session.topicTurns, topic: session.currentTopic, emirate: session.currentEmirate },
       confidence: { level: 'high', label: 'Tool result', policyId: null, reason: 'Live data from government system' },
@@ -379,6 +419,22 @@ app.post('/api/chat', async (req, res) => {
         citedIds: guardResult.citedIds,
         unknownIds: guardResult.unknownIds,
       },
+      trace: {
+        spans: [
+          {
+            type: 'retriever',
+            input: retrievalQuery,
+            output: docs.map(d => d.id),
+            topScore: docs[0]?.score ?? null,
+          },
+          {
+            type: 'llm',
+            model: 'llama-3.1-8b-instant',
+            reaskCount: guardResult.reaskCount,
+            grounded: guardResult.grounded,
+          },
+        ],
+      },
       retrievedDocs: docs.map(d => ({ id: d.id, title: d.title, score: d.score, emirate: d.emirate })),
       toolUsed: null,
       language: isArabic ? 'ar' : 'en',
@@ -415,7 +471,7 @@ app.post('/api/chat', async (req, res) => {
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`GovMurshid v3.10.0 running at http://localhost:${PORT}`);
+  console.log(`GovMurshid v3.12.0 running at http://localhost:${PORT}`);
   console.log(`LLM: Groq API (llama-3.1-8b-instant)`);
   console.log(`Tool calling: Groq native function calling ✅`);
   console.log(`Multi-turn memory: session-based (${sessionStore.maxTurns} turns, ${sessionStore.ttlMs / 60000}min TTL) ✅`);
