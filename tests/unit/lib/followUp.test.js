@@ -28,7 +28,18 @@ describe('isFollowUp', () => {
   // this regex is overly broad and matches ANY "What...?" question, not just
   // genuine follow-ups. This test documents the current (buggy) behavior so
   // a future fix is a deliberate, visible change rather than a silent one.
-  test('[KNOWN BUG] also matches non-follow-up "What is X" questions', () => {
+  // NOTE: isFollowUp() itself is intentionally broad and matches ANY
+  // "What...?" question, not just genuine follow-ups — that's unchanged.
+  // The REAL bug this used to cause (server.js reading a just-mutated
+  // session.currentTopic as if it were prior-turn context, letting a
+  // message's own topic keywords make it look like a follow-up to
+  // itself) was fixed in v3.11.0 by gating followUp on the session's
+  // PRIOR topic/emirate, captured before this turn's detection runs.
+  // This test still documents isFollowUp()'s own broad-matching behavior
+  // in isolation — that part is by design, not a bug — but it's no
+  // longer capable of corrupting a session's first message the way it
+  // did before the v3.11.0 fix.
+  test('isFollowUp matches any "What is X" question (broad by design)', () => {
     expect(isFollowUp('What is the process for VAT registration?')).toBe(true);
   });
 

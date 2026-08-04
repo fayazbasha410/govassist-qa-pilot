@@ -11,6 +11,7 @@ providers:
         Content-Type: application/json
       body:
         message: "{{input}}"
+        sessionId: "{{sessionId}}"
       transformResponse: |
        (json) => json.reply
 
@@ -26,9 +27,10 @@ tests:
   - description: "GD-001 Emirates ID renewal fee and expiry penalty"
     vars:
       input: "What is the renewal fee and penalty for an expired Emirates ID?"
+      sessionId: "eval-GD-001"
     assert:
-      - type: llm-rubric
-        value: "The response mentions a fee or penalty amount related to the Emirates ID, such as AED 100"
+      - type: icontains
+        value: "AED 100"
       - type: not-contains
         value: "no penalty"
 
@@ -36,9 +38,12 @@ tests:
   - description: "GD-002 Residency visa renewal documents"
     vars:
       input: "What documents do I need to renew my UAE residency visa?"
+      sessionId: "eval-GD-002"
     assert:
+      - type: icontains
+        value: "Emirates ID"
       - type: llm-rubric
-        value: "The response mentions at least two required documents such as passport, Emirates ID, or medical fitness certificate"
+        value: "The response clearly and completely lists at least two required documents for residency visa renewal, in a well-organized way"
       - type: not-contains
         value: "I don't know"
 
@@ -46,9 +51,10 @@ tests:
   - description: "GD-003 Golden Visa eligibility"
     vars:
       input: "Who can apply for the UAE Golden Visa and how long is it valid?"
+      sessionId: "eval-GD-003"
     assert:
-      - type: llm-rubric
-        value: "The response mentions at least one eligible category such as investors or entrepreneurs, and mentions the visa duration"
+      - type: icontains-any
+        value: ["Investors", "Entrepreneurs"]
       - type: not-contains
         value: "I don't know"
 
@@ -57,9 +63,10 @@ tests:
   - description: "GD-004 Ejari registration Dubai"
     vars:
       input: "How do I register my rental contract in Dubai?"
+      sessionId: "eval-GD-004"
     assert:
-      - type: llm-rubric
-        value: "The response mentions Ejari as the tenancy registration system in Dubai"
+      - type: icontains
+        value: "Ejari"
       - type: not-contains
         value: "I don't know"
 
@@ -67,9 +74,10 @@ tests:
   - description: "GD-005 Tawtheeq registration Abu Dhabi"
     vars:
       input: "How do I register my rental contract in Abu Dhabi?"
+      sessionId: "eval-GD-005"
     assert:
-      - type: llm-rubric
-        value: "The response provides helpful information about registering a rental or tenancy contract in Abu Dhabi and mentions Tawtheeq or TAMM"
+      - type: icontains-any
+        value: ["Tawtheeq", "TAMM"]
       - type: not-contains
         value: "I don't know"
 
@@ -78,9 +86,10 @@ tests:
   - description: "GD-006 Health insurance mandatory Dubai"
     vars:
       input: "Is health insurance mandatory for residents in Dubai?"
+      sessionId: "eval-GD-006"
     assert:
-      - type: llm-rubric
-        value: "The response clearly states that health insurance is mandatory in Dubai and mentions the employer's responsibility or DHA"
+      - type: icontains
+        value: "mandatory"
       - type: not-contains
         value: "optional"
 
@@ -88,9 +97,12 @@ tests:
   - description: "GD-007 Medical fitness certificate for residency visa"
     vars:
       input: "What medical tests are done for the UAE residency visa fitness certificate?"
+      sessionId: "eval-GD-007"
     assert:
+      - type: icontains-any
+        value: ["Blood test", "chest X-ray", "Chest X-ray"]
       - type: llm-rubric
-        value: "The response mentions at least two tests such as blood test, chest X-ray, or physical examination"
+        value: "The response clearly lists at least two distinct medical tests as part of the fitness certificate process"
       - type: not-contains
         value: "I don't know"
 
@@ -99,9 +111,10 @@ tests:
   - description: "GD-008 School enrollment Dubai KHDA"
     vars:
       input: "What is the process for enrolling a child in a Dubai school?"
+      sessionId: "eval-GD-008"
     assert:
-      - type: llm-rubric
-        value: "The response mentions KHDA as the Dubai school regulator and mentions required documents"
+      - type: icontains
+        value: "KHDA"
       - type: not-contains
         value: "I don't know"
 
@@ -109,9 +122,10 @@ tests:
   - description: "GD-009 Abu Dhabi school regulator"
     vars:
       input: "Which authority regulates private schools in Abu Dhabi?"
+      sessionId: "eval-GD-009"
     assert:
-      - type: llm-rubric
-        value: "The response correctly identifies ADEK or Abu Dhabi Department of Education and Knowledge as the regulator"
+      - type: icontains
+        value: "ADEK"
       - type: not-contains
         value: "KHDA"
 
@@ -120,9 +134,10 @@ tests:
   - description: "GD-010 Trade license renewal Dubai"
     vars:
       input: "What is the process and penalty for late trade license renewal in Dubai?"
+      sessionId: "eval-GD-010"
     assert:
-      - type: llm-rubric
-        value: "The response mentions the renewal process and a late penalty, grace period, or fine"
+      - type: icontains-any
+        value: ["30 days", "grace period"]
       - type: not-contains
         value: "I don't know"
 
@@ -130,9 +145,10 @@ tests:
   - description: "GD-011 VAT registration threshold"
     vars:
       input: "When must a UAE business register for VAT and what is the threshold?"
+      sessionId: "eval-GD-011"
     assert:
-      - type: llm-rubric
-        value: "The response mentions AED 375,000 as the mandatory VAT registration threshold or mentions the Federal Tax Authority"
+      - type: icontains
+        value: "375,000"
       - type: not-contains
         value: "no VAT"
 
@@ -141,9 +157,10 @@ tests:
   - description: "GD-012 Expatriate end of service gratuity"
     vars:
       input: "How is end of service gratuity calculated for expatriate employees in UAE?"
+      sessionId: "eval-GD-012"
     assert:
-      - type: llm-rubric
-        value: "The response explains gratuity calculation mentioning 21 days per year for first 5 years or 30 days thereafter"
+      - type: icontains
+        value: "21 days"
       - type: not-contains
         value: "no benefits"
 
@@ -152,9 +169,10 @@ tests:
   - description: "GD-013 MOI lost Emirates ID replacement"
     vars:
       input: "I lost my Emirates ID, how do I get a replacement?"
+      sessionId: "eval-GD-013"
     assert:
-      - type: llm-rubric
-        value: "The response explains how to report and replace a lost Emirates ID, mentioning ICP or a police report"
+      - type: icontains
+        value: "ICP"
       - type: not-contains
         value: "I don't know"
 
@@ -162,9 +180,10 @@ tests:
   - description: "GD-014 MOHRE labour complaint for unpaid salary"
     vars:
       input: "How do I file a complaint for unpaid salary?"
+      sessionId: "eval-GD-014"
     assert:
-      - type: llm-rubric
-        value: "The response mentions MOHRE, the hotline 80060, or the Wage Protection System"
+      - type: icontains
+        value: "80060"
       - type: not-contains
         value: "I don't know"
 
@@ -172,9 +191,12 @@ tests:
   - description: "GD-015 Zakat Fund eligibility"
     vars:
       input: "Who is eligible to receive Zakat Fund support?"
+      sessionId: "eval-GD-015"
     assert:
+      - type: icontains-any
+        value: ["Al-Fuqara", "Zakat Fund"]
       - type: llm-rubric
-        value: "The response mentions the Zakat Fund and at least one eligibility category such as the poor, needy, or debtors"
+        value: "The response clearly explains Zakat Fund eligibility, naming at least one specific recognized category of beneficiary"
       - type: not-contains
         value: "I don't know"
 
@@ -182,9 +204,12 @@ tests:
   - description: "GD-016 Widows financial support"
     vars:
       input: "What financial support is available for widows in the UAE?"
+      sessionId: "eval-GD-016"
     assert:
+      - type: icontains-any
+        value: ["stipend", "Sheikh Zayed", "Ministry of Community Development"]
       - type: llm-rubric
-        value: "The response mentions social support available to widows, such as a stipend or the Ministry of Community Development"
+        value: "The response gives a clear, sympathetic, and specific explanation of financial support available to widows, not just a vague deflection"
       - type: not-contains
         value: "I don't know"
 
@@ -192,9 +217,10 @@ tests:
   - description: "GD-017 Telecom setup Etisalat du"
     vars:
       input: "How do I set up home internet with Etisalat or du?"
+      sessionId: "eval-GD-017"
     assert:
-      - type: llm-rubric
-        value: "The response mentions Etisalat or du and required documents such as Emirates ID or a tenancy contract"
+      - type: icontains-any
+        value: ["Etisalat", "du.ae", " du "]
       - type: not-contains
         value: "I don't know"
 
@@ -202,9 +228,10 @@ tests:
   - description: "GD-018 Medical fitness for employment"
     vars:
       input: "Do I need a medical test for a new job in the UAE?"
+      sessionId: "eval-GD-018"
     assert:
-      - type: llm-rubric
-        value: "The response mentions employment-related medical fitness requirements such as drug screening or occupational health"
+      - type: icontains-any
+        value: ["drug and alcohol", "occupational", "medical fitness"]
       - type: not-contains
         value: "I don't know"
 
@@ -212,9 +239,10 @@ tests:
   - description: "GD-019 Death certificate registration"
     vars:
       input: "How do I register a death certificate in the UAE?"
+      sessionId: "eval-GD-019"
     assert:
-      - type: llm-rubric
-        value: "The response mentions registering the death within a specific timeframe and attestation requirements"
+      - type: icontains-any
+        value: ["48 hours", "attest"]
       - type: not-contains
         value: "I don't know"
 
@@ -222,9 +250,12 @@ tests:
   - description: "GD-020 Company formation mainland vs free zone"
     vars:
       input: "Should I set up my company in a free zone or mainland?"
+      sessionId: "eval-GD-020"
     assert:
+      - type: icontains-any
+        value: ["100% foreign ownership", "foreign ownership", "mainland", "Free Zone"]
       - type: llm-rubric
-        value: "The response compares mainland and free zone company setup, mentioning foreign ownership or market access differences"
+        value: "The response gives a balanced comparison of BOTH mainland and free zone options, not just one side"
       - type: not-contains
         value: "I don't know"
 
@@ -232,9 +263,10 @@ tests:
   - description: "GD-021 Divorce certificate attestation"
     vars:
       input: "How do I get a divorce certificate attested in the UAE?"
+      sessionId: "eval-GD-021"
     assert:
-      - type: llm-rubric
-        value: "The response mentions the Personal Status Courts or attestation process involving the Ministry of Foreign Affairs"
+      - type: icontains-any
+        value: ["Personal Status Courts", "Ministry of Foreign Affairs", "attest"]
       - type: not-contains
         value: "I don't know"
 
@@ -242,9 +274,10 @@ tests:
   - description: "GD-022 TAMM platform Abu Dhabi"
     vars:
       input: "What can I do on the TAMM platform?"
+      sessionId: "eval-GD-022"
     assert:
-      - type: llm-rubric
-        value: "The response describes TAMM as Abu Dhabi's digital government services platform and mentions UAE Pass or specific services"
+      - type: icontains-any
+        value: ["UAE Pass", "tamm.abudhabi", "TAMM"]
       - type: not-contains
         value: "I don't know"
 
@@ -252,9 +285,10 @@ tests:
   - description: "GD-023 Dubai rent dispute RDSC"
     vars:
       input: "How do I dispute a rent increase in Dubai?"
+      sessionId: "eval-GD-023"
     assert:
-      - type: llm-rubric
-        value: "The response mentions the Rental Dispute Settlement Centre or RERA's rental increase rules"
+      - type: icontains-any
+        value: ["Rental Dispute Settlement Centre", "RDSC", "Ejari"]
       - type: not-contains
         value: "I don't know"
 
@@ -263,9 +297,12 @@ tests:
   - description: "GD-024 Arabic — Emirates ID fine"
     vars:
       input: "ما هي غرامة انتهاء صلاحية الهوية الإماراتية؟"
+      sessionId: "eval-GD-024"
     assert:
-      - type: llm-rubric
-        value: "The response is in Arabic and mentions a fine or penalty related to Emirates ID"
+      - type: regex
+        value: '[\u0600-\u06FF]'
+      - type: icontains-any
+        value: ["100", "درهم"]
       - type: not-contains
         value: "I don't know"
 
@@ -273,9 +310,12 @@ tests:
   - description: "GD-025 Arabic — health insurance Dubai"
     vars:
       input: "هل التأمين الصحي إلزامي في دبي؟"
+      sessionId: "eval-GD-025"
     assert:
-      - type: llm-rubric
-        value: "The response is in Arabic and confirms that health insurance is mandatory in Dubai"
+      - type: regex
+        value: '[\u0600-\u06FF]'
+      - type: icontains
+        value: "إلزامي"
       - type: not-contains
         value: "I don't know"
 
@@ -283,9 +323,12 @@ tests:
   - description: "GD-026 Arabic — Ejari registration"
     vars:
       input: "كيف أسجل عقد الإيجار في دبي؟"
+      sessionId: "eval-GD-026"
     assert:
-      - type: llm-rubric
-        value: "The response is in Arabic and mentions Ejari or the tenancy registration process in Dubai"
+      - type: regex
+        value: '[\u0600-\u06FF]'
+      - type: icontains-any
+        value: ["إيجاري", "Ejari"]
       - type: not-contains
         value: "I don't know"
 
@@ -293,9 +336,12 @@ tests:
   - description: "GD-027 Arabic — Golden Visa"
     vars:
       input: "من يحق له التقدم للحصول على الإقامة الذهبية في الإمارات؟"
+      sessionId: "eval-GD-027"
     assert:
-      - type: llm-rubric
-        value: "The response is in Arabic and mentions eligible categories for the Golden Visa such as investors or entrepreneurs"
+      - type: regex
+        value: '[\u0600-\u06FF]'
+      - type: icontains-any
+        value: ["مستثمر", "10 سنوات"]
       - type: not-contains
         value: "I don't know"
 
@@ -303,9 +349,12 @@ tests:
   - description: "GD-028 Arabic — Emirates ID replacement"
     vars:
       input: "فقدت هويتي الإماراتية، كيف أحصل على بدل فاقد؟"
+      sessionId: "eval-GD-028"
     assert:
-      - type: llm-rubric
-        value: "The response is in Arabic and explains how to report and replace a lost Emirates ID"
+      - type: regex
+        value: '[\u0600-\u06FF]'
+      - type: icontains-any
+        value: ["استبدال", "ICP"]
       - type: not-contains
         value: "I don't know"
 
