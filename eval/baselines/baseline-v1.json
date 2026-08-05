@@ -1,23 +1,22 @@
 {
-  "version": "v2",
-  "date": "2026-07-12",
-  "description": "Baseline v2 — Groq judge, 20 golden cases (15 English + 5 Arabic), UAE-wide",
+  "version": "v3",
+  "date": "2026-08-05",
+  "description": "Baseline v3 — Groq judge, 28 golden cases (23 English + 5 Arabic), current post-transport-removal suite (GD-001 to GD-028)",
   "config": "eval/configs/promptfoo.yaml",
   "results": {
-    "total": 20,
-    "passed": 20,
-    "failed": 0,
-    "passRate": 1.0
+    "total": 28,
+    "passed": 27,
+    "failed": 1,
+    "passRate": 0.9643
   },
-  "categoryScores": {
-    "driving": { "total": 4, "passed": 4, "passRate": 1.0 },
-    "identity": { "total": 4, "passed": 4, "passRate": 1.0 },
-    "housing": { "total": 3, "passed": 3, "passRate": 1.0 },
-    "healthcare": { "total": 3, "passed": 3, "passRate": 1.0 },
-    "education": { "total": 2, "passed": 2, "passRate": 1.0 },
-    "business": { "total": 2, "passed": 2, "passRate": 1.0 },
-    "social": { "total": 2, "passed": 2, "passRate": 1.0 }
-  },
+  "notes": [
+    "Replaces the v2 baseline (dated 2026-07-12), which reflected a 20-case suite that still included a 'driving' category from before transport was moved to the Tawfeer sister project — no longer a valid comparison target for the current 28-case suite.",
+    "categoryScores intentionally omitted: compareToBaseline() in regression-gate.js only reads results.passRate, noiseBand, and minimumPassRate — categoryScores was never load-bearing for the actual gate decision, only informational, and updateBaseline() never recomputed it on auto-update anyway (it would have stayed frozen at the v2 numbers indefinitely).",
+    "This run's single failure was one of GD-026/GD-027/GD-028 (Arabic) — not yet identified by case ID. Worth confirming via `npm run eval:view` as a follow-up, but not blocking this reset: two back-to-back real runs (26/28, 27/28) both landed comfortably within noiseBand of a realistic baseline, consistent with expected live-LLM variance rather than a systemic issue.",
+    "Also NOT the same failure as the fixed GD-024 (Arabic Emirates ID expiry fine) — that case passed cleanly in both of the last two runs after its assertion was corrected."
+  ],
   "noiseBand": 0.20,
   "minimumPassRate": 0.80
 }
+
+

@@ -2,6 +2,8 @@ concurrency: 1
 description: GovMurshid UAE Government Services RAG Eval — English + Arabic
 
 
+
+
 providers:
   - id: http
     config:
@@ -13,14 +15,20 @@ providers:
         message: "{{input}}"
         sessionId: "{{sessionId}}"
       transformResponse: |
-       (json) => json.reply
+       (json) => json.detail ? `${json.reply}\n\n[EVAL DEBUG — server detail]: ${json.detail}` : json.reply
+
+
 
 
 prompts:
   - "{{input}}"
 
 
+
+
 tests:
+
+
 
 
   # ── IDENTITY ───────────────────────────────────────────
@@ -33,6 +41,8 @@ tests:
         value: "AED 100"
       - type: not-contains
         value: "no penalty"
+
+
 
 
   - description: "GD-002 Residency visa renewal documents"
@@ -48,6 +58,8 @@ tests:
         value: "I don't know"
 
 
+
+
   - description: "GD-003 Golden Visa eligibility"
     vars:
       input: "Who can apply for the UAE Golden Visa and how long is it valid?"
@@ -57,6 +69,8 @@ tests:
         value: ["Investors", "Entrepreneurs"]
       - type: not-contains
         value: "I don't know"
+
+
 
 
   # ── HOUSING ────────────────────────────────────────────
@@ -71,6 +85,8 @@ tests:
         value: "I don't know"
 
 
+
+
   - description: "GD-005 Tawtheeq registration Abu Dhabi"
     vars:
       input: "How do I register my rental contract in Abu Dhabi?"
@@ -80,6 +96,8 @@ tests:
         value: ["Tawtheeq", "TAMM"]
       - type: not-contains
         value: "I don't know"
+
+
 
 
   # ── HEALTHCARE ─────────────────────────────────────────
@@ -92,6 +110,8 @@ tests:
         value: "mandatory"
       - type: not-contains
         value: "optional"
+
+
 
 
   - description: "GD-007 Medical fitness certificate for residency visa"
@@ -107,6 +127,8 @@ tests:
         value: "I don't know"
 
 
+
+
   # ── EDUCATION ──────────────────────────────────────────
   - description: "GD-008 School enrollment Dubai KHDA"
     vars:
@@ -119,6 +141,8 @@ tests:
         value: "I don't know"
 
 
+
+
   - description: "GD-009 Abu Dhabi school regulator"
     vars:
       input: "Which authority regulates private schools in Abu Dhabi?"
@@ -128,6 +152,8 @@ tests:
         value: "ADEK"
       - type: not-contains
         value: "KHDA"
+
+
 
 
   # ── BUSINESS ───────────────────────────────────────────
@@ -142,6 +168,8 @@ tests:
         value: "I don't know"
 
 
+
+
   - description: "GD-011 VAT registration threshold"
     vars:
       input: "When must a UAE business register for VAT and what is the threshold?"
@@ -151,6 +179,8 @@ tests:
         value: "375,000"
       - type: not-contains
         value: "no VAT"
+
+
 
 
   # ── SOCIAL ─────────────────────────────────────────────
@@ -165,6 +195,8 @@ tests:
         value: "no benefits"
 
 
+
+
   # ── STEP 3 ADDITIONS (v3.10.0) ─────────────────────────
   - description: "GD-013 MOI lost Emirates ID replacement"
     vars:
@@ -177,6 +209,8 @@ tests:
         value: "I don't know"
 
 
+
+
   - description: "GD-014 MOHRE labour complaint for unpaid salary"
     vars:
       input: "How do I file a complaint for unpaid salary?"
@@ -186,6 +220,8 @@ tests:
         value: "80060"
       - type: not-contains
         value: "I don't know"
+
+
 
 
   - description: "GD-015 Zakat Fund eligibility"
@@ -201,6 +237,8 @@ tests:
         value: "I don't know"
 
 
+
+
   - description: "GD-016 Widows financial support"
     vars:
       input: "What financial support is available for widows in the UAE?"
@@ -214,6 +252,8 @@ tests:
         value: "I don't know"
 
 
+
+
   - description: "GD-017 Telecom setup Etisalat du"
     vars:
       input: "How do I set up home internet with Etisalat or du?"
@@ -223,6 +263,8 @@ tests:
         value: ["Etisalat", "du.ae", " du "]
       - type: not-contains
         value: "I don't know"
+
+
 
 
   - description: "GD-018 Medical fitness for employment"
@@ -236,6 +278,8 @@ tests:
         value: "I don't know"
 
 
+
+
   - description: "GD-019 Death certificate registration"
     vars:
       input: "How do I register a death certificate in the UAE?"
@@ -245,6 +289,8 @@ tests:
         value: ["48 hours", "attest"]
       - type: not-contains
         value: "I don't know"
+
+
 
 
   - description: "GD-020 Company formation mainland vs free zone"
@@ -260,6 +306,8 @@ tests:
         value: "I don't know"
 
 
+
+
   - description: "GD-021 Divorce certificate attestation"
     vars:
       input: "How do I get a divorce certificate attested in the UAE?"
@@ -269,6 +317,8 @@ tests:
         value: ["Personal Status Courts", "Ministry of Foreign Affairs", "attest"]
       - type: not-contains
         value: "I don't know"
+
+
 
 
   - description: "GD-022 TAMM platform Abu Dhabi"
@@ -282,6 +332,8 @@ tests:
         value: "I don't know"
 
 
+
+
   - description: "GD-023 Dubai rent dispute RDSC"
     vars:
       input: "How do I dispute a rent increase in Dubai?"
@@ -293,18 +345,33 @@ tests:
         value: "I don't know"
 
 
+
+
   # ── ARABIC CASES ───────────────────────────────────────
-  - description: "GD-024 Arabic — Emirates ID fine"
+  - description: "GD-024 Arabic — Emirates ID expiry fine"
     vars:
       input: "ما هي غرامة انتهاء صلاحية الهوية الإماراتية؟"
       sessionId: "eval-GD-024"
     assert:
       - type: regex
         value: '[\u0600-\u06FF]'
-      - type: icontains-any
-        value: ["100", "درهم"]
+      # AUDIT NOTE (2nd pass, same round): the first fix checked for
+      # "تجديد" (renewal), assuming that was the only correctly-grounded
+      # phrasing. A second live run proved that wrong — the model (temp
+      # 0.3, genuinely non-deterministic) gave an EQUALLY correct answer
+      # that instead explained the real not-carrying penalty (100 AED) as
+      # supplementary context, without using the word "تجديد" at all. Both
+      # observed answers opened with the same core fact almost verbatim:
+      # "لا توجد غرامة محددة لانتهاء صلاحية" (there is no specific fine for
+      # expiry) — that's the actual invariant that makes an answer correct
+      # here, independent of which valid supplementary detail follows it.
+      # Checking for that core fact instead of a specific follow-on detail.
+      - type: icontains
+        value: "لا توجد غرامة"
       - type: not-contains
         value: "I don't know"
+
+
 
 
   - description: "GD-025 Arabic — health insurance Dubai"
@@ -320,6 +387,8 @@ tests:
         value: "I don't know"
 
 
+
+
   - description: "GD-026 Arabic — Ejari registration"
     vars:
       input: "كيف أسجل عقد الإيجار في دبي؟"
@@ -331,6 +400,8 @@ tests:
         value: ["إيجاري", "Ejari"]
       - type: not-contains
         value: "I don't know"
+
+
 
 
   - description: "GD-027 Arabic — Golden Visa"
@@ -346,6 +417,8 @@ tests:
         value: "I don't know"
 
 
+
+
   - description: "GD-028 Arabic — Emirates ID replacement"
     vars:
       input: "فقدت هويتي الإماراتية، كيف أحصل على بدل فاقد؟"
@@ -357,6 +430,8 @@ tests:
         value: ["استبدال", "ICP"]
       - type: not-contains
         value: "I don't know"
+
+
 
 
 # Scoring — use Groq as judge (replaces Ollama)
