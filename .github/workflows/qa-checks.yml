@@ -1,0 +1,171 @@
+name: QA Checks (develop → qa)
+
+
+on:
+  pull_request:
+    branches: [ qa ]
+
+
+env:
+  GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+
+
+jobs:
+  # ── Job 1: Unit tests (Vitest) — re-run here too, cheap and self-contained ──
+  unit-tests:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+
+    steps:
+      - uses: actions/checkout@v4
+
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+
+      - run: npm ci
+
+
+      - name: Run Vitest unit suite
+        run: npm run test:unit
+
+
+  # ── Job 2: Schema validation — re-run here too ──
+  schema-validation:
+    name: Schema Validation
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+
+    steps:
+      - uses: actions/checkout@v4
+
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+
+      - run: npm ci
+
+
+      - name: Validate policy data
+        run: |
+          node -e "
+          const p = require('./src/data/policies');
+          console.log('Total policies:', p.length);
+          if (p.length < 35) { console.error('Missing policies!'); process.exit(1); }
+          for (const pol of p) {
+            if (!pol.id || !pol.title || !pol.content) {
+              console.error('Invalid policy:', pol.id);
+              process.exit(1);
+            }
+          }
+          console.log('All policies valid ✅');
+          "
+
+
+      - name: Validate test data
+        run: |
+          node -e "
+          const td = require('./tests/data/testData');
+          const required = ['APPOINTMENTS', 'GUARDRAIL_INPUTS', 'CHAT_MESSAGES'];
+          for (const key of required) {
+            if (!td[key]) { console.error('Missing:', key); process.exit(1); }
+          }
+          console.log('Test data valid ✅');
+          "
+
+
+  # ── Job 3: Smoke tests — ~40 tests, no LLM-heavy specs ──
+  # Moved here from pr-checks.yml (feature → develop) so this Groq-heavy
+  # suite runs once per develop → qa promotion, not once per every
+  # individual feature PR.
+  smoke-tests:
+    name: Smoke Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: schema-validation
+
+
+    steps:
+      - uses: actions/checkout@v4
+
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+
+      - run: npm ci
+
+
+      - run: npx playwright install --with-deps chromium
+
+
+      - name: Start server
+        run: |
+          npm start &
+          echo "Waiting for server..."
+          for i in {1..30}; do
+            curl -sf http://localhost:3000/api/health && echo "Server ready! ✅" && break
+            echo "Attempt $i, retrying in 3s..."
+            sleep 3
+          done
+
+
+      - name: Run smoke suite
+        run: npx playwright test tests/specs/api/health.spec.js tests/specs/api/fines.spec.js tests/specs/api/appointments.spec.js tests/specs/ui/
+
+
+      - name: Upload report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: qa-smoke-report
+          path: playwright-report/
+          retention-days: 3
+
+
+  # ── Job 4: Guardrail smoke ──
+  # Moved here from pr-checks.yml for the same reason — not fully
+  # Groq-free (redteam cases that aren't blocked outright still hit the
+  # LLM), so it belongs at the qa promotion gate, not on every feature PR.
+  guardrail-smoke:
+    name: Guardrail Smoke
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    needs: schema-validation
+
+
+    steps:
+      - uses: actions/checkout@v4
+
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+
+      - run: npm ci
+
+
+      - name: Start server
+        run: |
+          npm start &
+          for i in {1..30}; do
+            curl -sf http://localhost:3000/api/health && break
+            sleep 3
+          done
+
+
+      - name: Run red team smoke (guardrails only)
+        run: npm run eval:redteam
