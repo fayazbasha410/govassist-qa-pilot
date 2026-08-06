@@ -6,6 +6,8 @@ const policies = require('./data/policies');
 const { checkFineStatus, bookAppointment } = require('./tools/agentTools');
 
 
+
+
 const { detectTopicGroup, detectEmirate, detectArabic } = require('./lib/textDetection');
 const { retrieveRelevantDocs, computeConfidence } = require('./lib/ragEngine');
 const { isFollowUp, enrichFollowUp } = require('./lib/followUp');
@@ -16,10 +18,14 @@ const { createSessionStore } = require('./lib/session');
 const { translateArabicQuery } = require('./lib/arabicTranslation');
 
 
+
+
 const app = express();
 app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, '../public')));
+
+
 
 
 // ─────────────────────────────────────────
@@ -29,8 +35,12 @@ app.use(express.static(path.join(__dirname, '../public')));
 // ─────────────────────────────────────────
 
 
+
+
 const sessionStore = createSessionStore();
 sessionStore.startCleanupInterval();
+
+
 
 
 // ─────────────────────────────────────────
@@ -38,8 +48,53 @@ sessionStore.startCleanupInterval();
 // ─────────────────────────────────────────
 
 
+
+
 const Groq = require('groq-sdk');
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+
+
+
+
+// AUDIT NOTE (this round): confirmed via a real eval run that Groq's TPM
+// 429s explicitly state the real wait needed, e.g. "Please try again in
+// 19.63s" — and it varies a lot (19s–48s observed), almost always well
+// above the old fixed ~6-8s guess. Retrying before that window elapses
+// just hits the same 429 again, and with only 1 retry available, looked
+// like the app was "temporarily unavailable" when it was really a
+// too-short backoff. This reads the real suggested wait, preferring a
+// standard Retry-After header if the SDK surfaces one, falling back to
+// parsing Groq's own message text, and finally to the old fixed-guess
+// behavior if neither is present — so it degrades safely either way.
+function parseRetryAfterMs(err) {
+  const headerVal =
+    err?.headers?.get?.('retry-after') ??
+    err?.response?.headers?.get?.('retry-after');
+  if (headerVal) {
+    const secs = Number(headerVal);
+    if (Number.isFinite(secs) && secs >= 0) return secs * 1000;
+  }
+  const match = /try again in ([\d.]+)s/i.exec(err?.message || '');
+  if (match) return Math.ceil(parseFloat(match[1]) * 1000);
+  return null;
+}
+
+
+function computeBackoffMs(err, attempt) {
+  const suggestedMs = parseRetryAfterMs(err);
+  // Capped at 30s, not the full suggested wait, deliberately: several
+  // Playwright tests set LLM_TIMEOUT = 60000ms for the whole request, and
+  // Groq's real suggested waits have been observed up to ~48s. Waiting the
+  // full amount would sometimes turn a recoverable 429 into a hard test
+  // timeout instead — this cap trades some retry effectiveness (a request
+  // needing a very long wait can still fail once) for not creating that
+  // new failure mode. Revisit this cap together with LLM_TIMEOUT if either
+  // changes.
+  if (suggestedMs !== null) return Math.min(suggestedMs + 500, 30000);
+  return (attempt * 6000) + Math.floor(Math.random() * 2000);
+}
+
+
 
 
 async function callOllama(systemPrompt, userMessage, retries = 2) {
@@ -58,8 +113,9 @@ async function callOllama(systemPrompt, userMessage, retries = 2) {
     } catch (err) {
       const isRateLimit = err.status === 429 || err.message?.includes('429');
       if (isRateLimit && attempt < retries) {
-        const waitMs = (attempt * 6000) + Math.floor(Math.random() * 2000);
-        console.log(`⏳ Groq rate limit — waiting ${(waitMs/1000).toFixed(1)}s (retry ${attempt}/${retries})`);
+        const waitMs = computeBackoffMs(err, attempt);
+        const usedSuggested = parseRetryAfterMs(err) !== null;
+        console.log(`⏳ Groq rate limit — waiting ${(waitMs/1000).toFixed(1)}s (retry ${attempt}/${retries}${usedSuggested ? ', per Groq-suggested wait' : ', fallback estimate'})`);
         await new Promise(r => setTimeout(r, waitMs));
         continue;
       }
@@ -69,9 +125,13 @@ async function callOllama(systemPrompt, userMessage, retries = 2) {
 }
 
 
+
+
 // ─────────────────────────────────────────
 // GROQ NATIVE TOOL CALLING
 // ─────────────────────────────────────────
+
+
 
 
 const TOOL_DEFINITIONS = [
@@ -94,6 +154,8 @@ const TOOL_DEFINITIONS = [
     }
   }
 ];
+
+
 
 
 async function detectToolIntentWithLLM(message, retries = 2) {
@@ -119,7 +181,7 @@ async function detectToolIntentWithLLM(message, retries = 2) {
     } catch (err) {
       const isRateLimit = err.status === 429 || err.message?.includes('429');
       if (isRateLimit && attempt < retries) {
-        const waitMs = (attempt * 6000) + Math.floor(Math.random() * 2000);
+        const waitMs = computeBackoffMs(err, attempt);
         await new Promise(r => setTimeout(r, waitMs));
         continue;
       }
@@ -130,9 +192,13 @@ async function detectToolIntentWithLLM(message, retries = 2) {
 }
 
 
+
+
 // ─────────────────────────────────────────
 // SYSTEM PROMPT
 // ─────────────────────────────────────────
+
+
 
 
 const ACTIVE_SYSTEM_PROMPT = `You are GovMurshid, an AI guide for UAE government services across all seven emirates — Abu Dhabi, Dubai, Sharjah, Ajman, Umm Al Quwain, Ras Al Khaimah, and Fujairah.
@@ -145,18 +211,24 @@ Be concise, helpful, and professional.
 If the answer is not in the context, say so clearly and suggest the user visit the relevant emirate portal.`;
 
 
+
+
 // ─────────────────────────────────────────
 // ROUTES
 // ─────────────────────────────────────────
 
 
+
+
 app.get('/favicon.ico', (req, res) => res.status(204).end());
+
+
 
 
 app.get('/api/health', (req, res) => {
   res.json({
     status: 'ok',
-    version: '3.10.0',
+    version: '3.12.0',
     model: 'groq/llama-3.1-8b-instant',
     name: 'GovMurshid',
     toolCalling: 'native',
@@ -170,12 +242,16 @@ app.get('/api/health', (req, res) => {
 });
 
 
+
+
 app.get('/api/policies/search', (req, res) => {
   const { q } = req.query;
   if (!q) return res.status(400).json({ error: 'Missing query parameter q' });
   const docs = retrieveRelevantDocs(q, policies);
   res.json({ query: q, results: docs });
 });
+
+
 
 
 // checkFineStatus is a stub — see agentTools.js. This route stays so old
@@ -185,11 +261,15 @@ app.get('/api/tools/fines/:plateNumber', (req, res) => {
 });
 
 
+
+
 app.post('/api/tools/appointment', (req, res) => {
   const { service, date } = req.body;
   if (!service || !date) return res.status(400).json({ error: 'Missing service or date' });
   res.json(bookAppointment(service, date));
 });
+
+
 
 
 app.delete('/api/session/:sessionId', (req, res) => {
@@ -198,18 +278,26 @@ app.delete('/api/session/:sessionId', (req, res) => {
 });
 
 
+
+
 // ─────────────────────────────────────────
 // MAIN CHAT ENDPOINT
 // ─────────────────────────────────────────
+
+
 
 
 app.post('/api/chat', async (req, res) => {
   const { message, sessionId } = req.body;
 
 
+
+
   if (!message || typeof message !== 'string') {
     return res.status(400).json({ error: 'Missing or invalid message' });
   }
+
+
 
 
   // ── 1. Guardrails ──────────────────────────────────────────────────
@@ -227,8 +315,12 @@ app.post('/api/chat', async (req, res) => {
   }
 
 
+
+
   // ── 2. Language detection ──────────────────────────────────────────
   const isArabic = detectArabic(message);
+
+
 
 
   // ── 3. Session + memory ────────────────────────────────────────────
@@ -236,14 +328,35 @@ app.post('/api/chat', async (req, res) => {
   const session = sessionStore.getSession(sid);
 
 
+
+
+  // v3.11.0 FIX: capture the session's PRIOR topic/emirate before this
+  // turn's detection overwrites them. Previously, incomingTopic/incomingEmirate
+  // were written into session.currentTopic/currentEmirate BEFORE the
+  // followUp check ran, so a message's own topic keywords (e.g. "Emirates
+  // ID" matching the visa group) made it look like there was already an
+  // established topic — causing the very first message of a session to be
+  // misread as a follow-up and its RAG query truncated to bare topic
+  // keywords. Confirmed via a real promptfoo eval run where 28/28 cases
+  // failed; root-caused to this exact ordering bug.
+  const priorTopic   = session.currentTopic;
+  const priorEmirate = session.currentEmirate;
+
+
+
+
   const incomingTopic   = detectTopicGroup(message);
   const incomingEmirate = detectEmirate(message);
-  const topicChanged    = incomingTopic && session.currentTopic && incomingTopic !== session.currentTopic;
+  const topicChanged    = incomingTopic && priorTopic && incomingTopic !== priorTopic;
+
+
 
 
   if (incomingTopic)   session.currentTopic   = incomingTopic;
   if (incomingEmirate) session.currentEmirate = incomingEmirate;
   session.topicChanged = topicChanged;
+
+
 
 
   if (topicChanged || session.topicTurns === 0) {
@@ -253,10 +366,14 @@ app.post('/api/chat', async (req, res) => {
   }
 
 
+
+
   // ── 4. Follow-up enrichment ────────────────────────────────────────
-  const followUp = isFollowUp(message) && (session.currentTopic || session.currentEmirate);
+  const followUp = isFollowUp(message) && (priorTopic || priorEmirate);
   let retrievalMessage = message;
   if (followUp) retrievalMessage = enrichFollowUp(message, session);
+
+
 
 
   // ── 5. Tool intent detection (only if booking keyword present) ────
@@ -264,11 +381,35 @@ app.post('/api/chat', async (req, res) => {
   const mightNeedTool    = BOOKING_KEYWORDS.some(k => message.toLowerCase().includes(k));
 
 
+
+
   const toolIntent = mightNeedTool ? await detectToolIntentWithLLM(message) : null;
 
 
+
+
   if (toolIntent) {
+    // Tool Correctness check (v3.12.0) — native, deterministic equivalent of
+    // DeepEval's ToolCorrectnessMetric parameter validation. Checks the
+    // LLM-extracted params are well-formed BEFORE execution, independent of
+    // whether the booking itself succeeds/fails on business logic (e.g. a
+    // fully-booked date). This is a proportionate scope for GovMurshid's
+    // single-tool, non-chained architecture — not a full agent trace tree.
+    const VALID_SERVICES = ['emirates-id', 'residency-visa', 'health-card'];
+    const DATE_FORMAT = /^\d{4}-\d{2}-\d{2}$/;
+    const toolCorrectness = {
+      toolNameValid: toolIntent.tool === 'bookAppointment',
+      serviceParamValid: VALID_SERVICES.includes(toolIntent.params?.service),
+      dateParamValid: DATE_FORMAT.test(toolIntent.params?.date || ''),
+    };
+    toolCorrectness.allValid = toolCorrectness.toolNameValid && toolCorrectness.serviceParamValid && toolCorrectness.dateParamValid;
+
+
+
+
     const toolResult = bookAppointment(toolIntent.params.service, toolIntent.params.date);
+
+
 
 
     let toolReply = toolResult.message;
@@ -279,8 +420,12 @@ app.post('/api/chat', async (req, res) => {
     }
 
 
+
+
     sessionStore.addToHistory(session, 'user', message);
     sessionStore.addToHistory(session, 'assistant', toolReply);
+
+
 
 
     return res.json({
@@ -288,6 +433,17 @@ app.post('/api/chat', async (req, res) => {
       guardrail: { triggered: false },
       retrievedDocs: [],
       toolUsed: { name: toolIntent.tool, params: toolIntent.params, result: toolResult },
+      trace: {
+        spans: [
+          {
+            type: 'tool',
+            name: toolIntent.tool,
+            input: toolIntent.params,
+            output: toolResult,
+            correctness: toolCorrectness,
+          },
+        ],
+      },
       language: isArabic ? 'ar' : 'en',
       memory: { turns: session.topicTurns, topic: session.currentTopic, emirate: session.currentEmirate },
       confidence: { level: 'high', label: 'Tool result', policyId: null, reason: 'Live data from government system' },
@@ -295,10 +451,14 @@ app.post('/api/chat', async (req, res) => {
   }
 
 
+
+
   // ── 6. RAG retrieval ──────────────────────────────────────────────
   const retrievalQuery = isArabic ? translateArabicQuery(retrievalMessage) : retrievalMessage;
   const topK = followUp ? 2 : 5;
   const docs = retrieveRelevantDocs(retrievalQuery, policies, topK);
+
+
 
 
   if (docs.length === 0) {
@@ -317,12 +477,18 @@ app.post('/api/chat', async (req, res) => {
   }
 
 
+
+
   // ── 7. Confidence scoring ─────────────────────────────────────────
   const confidence = computeConfidence(docs, retrievalQuery);
 
 
+
+
   // ── 8. Build prompt ───────────────────────────────────────────────
   const context = docs.map(d => `[${d.id}] ${d.title} (${d.emirate || 'UAE'}):\n${d.content}`).join('\n\n');
+
+
 
 
   const languageInstruction = isArabic
@@ -330,9 +496,13 @@ app.post('/api/chat', async (req, res) => {
     : `\nRespond in English.`;
 
 
+
+
   const topicFocusInstruction = followUp && session.currentTopic
     ? `\nThe user is asking a follow-up about ${session.currentTopic}${session.currentEmirate ? ` in ${session.currentEmirate}` : ''}. Answer ONLY about ${session.currentTopic} — do not introduce other topics.`
     : '';
+
+
 
 
   let historyContext = '';
@@ -343,7 +513,11 @@ app.post('/api/chat', async (req, res) => {
   }
 
 
+
+
   const systemPrompt = `${ACTIVE_SYSTEM_PROMPT}${languageInstruction}${topicFocusInstruction}${historyContext}\n\nPOLICY CONTEXT:\n${context}`;
+
+
 
 
   // ── 9. LLM call — routed through output guardrails (v3.9.0) ───────
@@ -361,11 +535,17 @@ app.post('/api/chat', async (req, res) => {
     });
 
 
+
+
     const llmReply = sanitiseOutput(guardResult.reply, isArabic);
+
+
 
 
     sessionStore.addToHistory(session, 'user', message);
     sessionStore.addToHistory(session, 'assistant', llmReply);
+
+
 
 
     res.json({
@@ -379,6 +559,22 @@ app.post('/api/chat', async (req, res) => {
         citedIds: guardResult.citedIds,
         unknownIds: guardResult.unknownIds,
       },
+      trace: {
+        spans: [
+          {
+            type: 'retriever',
+            input: retrievalQuery,
+            output: docs.map(d => d.id),
+            topScore: docs[0]?.score ?? null,
+          },
+          {
+            type: 'llm',
+            model: 'llama-3.1-8b-instant',
+            reaskCount: guardResult.reaskCount,
+            grounded: guardResult.grounded,
+          },
+        ],
+      },
       retrievedDocs: docs.map(d => ({ id: d.id, title: d.title, score: d.score, emirate: d.emirate })),
       toolUsed: null,
       language: isArabic ? 'ar' : 'en',
@@ -387,14 +583,25 @@ app.post('/api/chat', async (req, res) => {
     });
 
 
+
+
   } catch (err) {
-    console.error('LLM error:', err.message);
+    // AUDIT NOTE (this round): err.message alone wasn't enough to tell a
+    // 429 rate-limit apart from a timeout or a genuine 5xx — all three
+    // produce the same generic user-facing fallback, and promptfoo's
+    // transformResponse was discarding this `detail` field entirely, so
+    // even the message alone never reached the eval results. Both are
+    // fixed now (this log line + promptfoo.yaml). Groq SDK errors
+    // typically carry `.status` (HTTP status) and sometimes `.code`;
+    // logging both, defensively, without assuming either is present.
+    const errStatus = err.status ?? err.code ?? 'unknown';
+    console.error(`LLM error [${errStatus}]:`, err.message);
     const fallbackReply = isArabic
       ? 'عذراً، المساعد غير متاح مؤقتاً. يرجى المحاولة مرة أخرى.'
       : 'Sorry, the assistant is temporarily unavailable. Please try again.';
     res.status(500).json({
       error: 'LLM unavailable',
-      detail: err.message,
+      detail: `[${errStatus}] ${err.message}`,
       reply: fallbackReply,
       guardrail: { triggered: false },
       outputGuardrail: null,
@@ -408,14 +615,18 @@ app.post('/api/chat', async (req, res) => {
 });
 
 
+
+
 // ─────────────────────────────────────────
 // START
 // ─────────────────────────────────────────
 
 
+
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`GovMurshid v3.10.0 running at http://localhost:${PORT}`);
+  console.log(`GovMurshid v3.12.0 running at http://localhost:${PORT}`);
   console.log(`LLM: Groq API (llama-3.1-8b-instant)`);
   console.log(`Tool calling: Groq native function calling ✅`);
   console.log(`Multi-turn memory: session-based (${sessionStore.maxTurns} turns, ${sessionStore.ttlMs / 60000}min TTL) ✅`);
@@ -428,6 +639,8 @@ app.listen(PORT, () => {
   console.log(`Scope: All UAE government services EXCEPT transport (see Tawfeer) ✅`);
   console.log(`Core logic modularized under src/lib/ for unit testing ✅`);
 });
+
+
 
 
 module.exports = app;

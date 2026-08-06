@@ -8,7 +8,8 @@
     "test": "npx playwright test",
     "test:unit": "vitest run",
     "test:unit:watch": "vitest",
-    "eval": "cd eval/configs && promptfoo eval --config promptfoo.yaml --max-concurrency 1",
+    "check-quota": "node scripts/check-quota.js",
+    "eval": "promptfoo eval --config eval/configs/promptfoo.yaml --max-concurrency 1 --no-cache",
     "eval:regression": "node eval/regression-gate.js",
     "eval:redteam": "node eval/adversarial/red-team.js",
     "eval:prod": "node eval/prod-simulator/prod-eval.js",
@@ -17,6 +18,8 @@
     "eval:deepeval": "node eval/deepeval-metrics.js",
     "eval:deepeval:live": "node eval/deepeval-metrics.js --live",
     "eval:perf-trend": "node eval/performance-benchmark.js",
+    "eval:bias": "node eval/bias-check.js",
+    "eval:conversational": "node eval/conversational-eval.js",
     "perf": "k6 run tests/performance/load-test.js"
   },
   "keywords": [],
