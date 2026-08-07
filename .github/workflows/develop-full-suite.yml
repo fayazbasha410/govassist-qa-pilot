@@ -6,6 +6,10 @@ on:
     branches: [ staging ]
 
 
+env:
+  GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+
+
 jobs:
   full-playwright:
     name: Full Playwright Suite
