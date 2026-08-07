@@ -1,21 +1,16 @@
-name: Full Test Suite (qa → staging)
+name: Full Test Suite (Develop)
 
 
 on:
-  pull_request:
-    branches: [ staging ]
-
-
-env:
-  GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+  push:
+    branches: [ develop ]
 
 
 jobs:
-  # ── Job 1: Full Playwright suite — 200 tests ──────────
   full-playwright:
     name: Full Playwright Suite
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 50
 
 
     steps:
@@ -24,7 +19,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: '20'
           cache: 'npm'
 
 
@@ -34,12 +29,26 @@ jobs:
       - run: npx playwright install --with-deps chromium
 
 
+      - name: Install Ollama and pull model
+        run: |
+          curl -fsSL https://ollama.com/install.sh | sh
+          ollama serve &
+          echo "Waiting for Ollama..."
+          for i in {1..20}; do
+            curl -sf http://localhost:11434/api/tags && echo "Ollama ready!" && break
+            echo "Attempt $i, retrying in 3s..."
+            sleep 3
+          done
+          ollama pull llama3.2
+          echo "Model ready!"
+
+
       - name: Start server
         run: |
           npm start &
           echo "Waiting for server..."
           for i in {1..30}; do
-            curl -sf http://localhost:3000/api/health && echo "Server ready! ✅" && break
+            curl -sf http://localhost:3000/api/health && echo "Server ready!" && break
             echo "Attempt $i, retrying in 3s..."
             sleep 3
           done
@@ -58,9 +67,60 @@ jobs:
           retention-days: 14
 
 
-  # ── Job 2: RAG regression gate ────────────────────────
   regression-gate:
     name: RAG Regression Gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    needs: full-playwright
+
+
+    steps:
+      - uses: actions/checkout@v4
+
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+
+      - run: npm ci
+
+
+      - run: npm install -g promptfoo
+
+
+      - name: Install Ollama and pull model
+        run: |
+          curl -fsSL https://ollama.com/install.sh | sh
+          ollama serve &
+          echo "Waiting for Ollama..."
+          for i in {1..20}; do
+            curl -sf http://localhost:11434/api/tags && echo "Ollama ready!" && break
+            echo "Attempt $i, retrying in 3s..."
+            sleep 3
+          done
+          ollama pull llama3.2
+          echo "Model ready!"
+
+
+      - name: Start server
+        run: |
+          npm start &
+          echo "Waiting for server..."
+          for i in {1..30}; do
+            curl -sf http://localhost:3000/api/health && echo "Server ready!" && break
+            echo "Attempt $i, retrying in 3s..."
+            sleep 3
+          done
+
+
+      - name: Run regression gate
+        run: npm run eval:regression
+
+
+  red-team:
+    name: Adversarial Red Team
     runs-on: ubuntu-latest
     timeout-minutes: 25
     needs: full-playwright
@@ -72,56 +132,39 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: '20'
           cache: 'npm'
 
 
       - run: npm ci
-      - run: npm install -g promptfoo
 
 
-      - name: Start server
+      - name: Install Ollama and pull model
         run: |
-          npm start &
-          for i in {1..30}; do
-            curl -sf http://localhost:3000/api/health && break
+          curl -fsSL https://ollama.com/install.sh | sh
+          ollama serve &
+          echo "Waiting for Ollama..."
+          for i in {1..20}; do
+            curl -sf http://localhost:11434/api/tags && echo "Ollama ready!" && break
+            echo "Attempt $i, retrying in 3s..."
             sleep 3
           done
-
-
-      - name: Run regression gate
-        run: npm run eval:regression
-
-
-  # ── Job 3: Red team ───────────────────────────────────
-  red-team:
-    name: Adversarial Red Team
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    needs: full-playwright
-
-
-    steps:
-      - uses: actions/checkout@v4
-
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          cache: 'npm'
-
-
-      - run: npm ci
+          ollama pull llama3.2
+          echo "Model ready!"
 
 
       - name: Start server
         run: |
           npm start &
+          echo "Waiting for server..."
           for i in {1..30}; do
-            curl -sf http://localhost:3000/api/health && break
+            curl -sf http://localhost:3000/api/health && echo "Server ready!" && break
+            echo "Attempt $i, retrying in 3s..."
             sleep 3
           done
 
 
       - name: Run red team
         run: npm run eval:redteam
+
+
