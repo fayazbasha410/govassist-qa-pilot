@@ -1,13 +1,19 @@
 name: QA Checks (develop → qa)
 
 
+
+
 on:
   pull_request:
     branches: [ qa ]
 
 
+
+
 env:
   GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+
+
 
 
 jobs:
@@ -18,8 +24,12 @@ jobs:
     timeout-minutes: 5
 
 
+
+
     steps:
       - uses: actions/checkout@v4
+
+
 
 
       - uses: actions/setup-node@v4
@@ -28,11 +38,17 @@ jobs:
           cache: 'npm'
 
 
+
+
       - run: npm ci
+
+
 
 
       - name: Run Vitest unit suite
         run: npm run test:unit
+
+
 
 
   # ── Job 2: Schema validation — re-run here too ──
@@ -42,8 +58,12 @@ jobs:
     timeout-minutes: 5
 
 
+
+
     steps:
       - uses: actions/checkout@v4
+
+
 
 
       - uses: actions/setup-node@v4
@@ -52,7 +72,11 @@ jobs:
           cache: 'npm'
 
 
+
+
       - run: npm ci
+
+
 
 
       - name: Validate policy data
@@ -71,6 +95,8 @@ jobs:
           "
 
 
+
+
       - name: Validate test data
         run: |
           node -e "
@@ -83,6 +109,8 @@ jobs:
           "
 
 
+
+
   # ── Job 3: Smoke tests — ~40 tests, no LLM-heavy specs ──
   # Moved here from pr-checks.yml (feature → develop) so this Groq-heavy
   # suite runs once per develop → qa promotion, not once per every
@@ -90,12 +118,16 @@ jobs:
   smoke-tests:
     name: Smoke Tests
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 40
     needs: schema-validation
+
+
 
 
     steps:
       - uses: actions/checkout@v4
+
+
 
 
       - uses: actions/setup-node@v4
@@ -104,10 +136,16 @@ jobs:
           cache: 'npm'
 
 
+
+
       - run: npm ci
 
 
+
+
       - run: npx playwright install --with-deps chromium
+
+
 
 
       - name: Start server
@@ -121,8 +159,12 @@ jobs:
           done
 
 
+
+
       - name: Run smoke suite
         run: npx playwright test tests/specs/api/health.spec.js tests/specs/api/fines.spec.js tests/specs/api/appointments.spec.js tests/specs/ui/
+
+
 
 
       - name: Upload report
@@ -134,6 +176,8 @@ jobs:
           retention-days: 3
 
 
+
+
   # ── Job 4: Guardrail smoke ──
   # Moved here from pr-checks.yml for the same reason — not fully
   # Groq-free (redteam cases that aren't blocked outright still hit the
@@ -141,12 +185,16 @@ jobs:
   guardrail-smoke:
     name: Guardrail Smoke
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 18
     needs: schema-validation
+
+
 
 
     steps:
       - uses: actions/checkout@v4
+
+
 
 
       - uses: actions/setup-node@v4
@@ -155,7 +203,11 @@ jobs:
           cache: 'npm'
 
 
+
+
       - run: npm ci
+
+
 
 
       - name: Start server
@@ -167,5 +219,9 @@ jobs:
           done
 
 
+
+
       - name: Run red team smoke (guardrails only)
         run: npm run eval:redteam
+
+
