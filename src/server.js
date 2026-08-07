@@ -461,7 +461,14 @@ app.post('/api/chat', async (req, res) => {
 
   const incomingTopic   = detectTopicGroup(message);
   const incomingEmirate = detectEmirate(message);
-  const topicChanged    = incomingTopic && priorTopic && incomingTopic !== priorTopic;
+  // AUDIT NOTE (this round): confirmed via a real CI failure that this was
+  // never a true boolean — a && chain short-circuits on the first falsy
+  // operand and returns THAT value, not `false`. priorTopic is undefined on
+  // every session's first message (nothing asked yet), so topicChanged came
+  // out as `undefined` there, not `false` — failing typeof checks. Wrapped
+  // in Boolean() so it's always a real boolean regardless of which operand
+  // was falsy.
+  const topicChanged    = Boolean(incomingTopic && priorTopic && incomingTopic !== priorTopic);
 
 
 
