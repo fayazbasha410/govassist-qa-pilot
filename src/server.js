@@ -8,6 +8,10 @@ const { checkFineStatus, bookAppointment } = require('./tools/agentTools');
 
 
 
+
+
+
+
 const { detectTopicGroup, detectEmirate, detectArabic } = require('./lib/textDetection');
 const { retrieveRelevantDocs, computeConfidence } = require('./lib/ragEngine');
 const { isFollowUp, enrichFollowUp } = require('./lib/followUp');
@@ -20,10 +24,18 @@ const { translateArabicQuery } = require('./lib/arabicTranslation');
 
 
 
+
+
+
+
 const app = express();
 app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, '../public')));
+
+
+
+
 
 
 
@@ -37,8 +49,16 @@ app.use(express.static(path.join(__dirname, '../public')));
 
 
 
+
+
+
+
 const sessionStore = createSessionStore();
 sessionStore.startCleanupInterval();
+
+
+
+
 
 
 
@@ -50,8 +70,16 @@ sessionStore.startCleanupInterval();
 
 
 
+
+
+
+
 const Groq = require('groq-sdk');
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+
+
+
+
 
 
 
@@ -80,6 +108,8 @@ function parseRetryAfterMs(err) {
 }
 
 
+
+
 function computeBackoffMs(err, attempt) {
   const suggestedMs = parseRetryAfterMs(err);
   // Capped at 30s, not the full suggested wait, deliberately: several
@@ -93,6 +123,10 @@ function computeBackoffMs(err, attempt) {
   if (suggestedMs !== null) return Math.min(suggestedMs + 500, 30000);
   return (attempt * 6000) + Math.floor(Math.random() * 2000);
 }
+
+
+
+
 
 
 
@@ -127,9 +161,17 @@ async function callOllama(systemPrompt, userMessage, retries = 2) {
 
 
 
+
+
+
+
 // ─────────────────────────────────────────
 // GROQ NATIVE TOOL CALLING
 // ─────────────────────────────────────────
+
+
+
+
 
 
 
@@ -154,6 +196,10 @@ const TOOL_DEFINITIONS = [
     }
   }
 ];
+
+
+
+
 
 
 
@@ -194,9 +240,17 @@ async function detectToolIntentWithLLM(message, retries = 2) {
 
 
 
+
+
+
+
 // ─────────────────────────────────────────
 // SYSTEM PROMPT
 // ─────────────────────────────────────────
+
+
+
+
 
 
 
@@ -213,6 +267,10 @@ If the answer is not in the context, say so clearly and suggest the user visit t
 
 
 
+
+
+
+
 // ─────────────────────────────────────────
 // ROUTES
 // ─────────────────────────────────────────
@@ -220,7 +278,15 @@ If the answer is not in the context, say so clearly and suggest the user visit t
 
 
 
+
+
+
+
 app.get('/favicon.ico', (req, res) => res.status(204).end());
+
+
+
+
 
 
 
@@ -244,12 +310,20 @@ app.get('/api/health', (req, res) => {
 
 
 
+
+
+
+
 app.get('/api/policies/search', (req, res) => {
   const { q } = req.query;
   if (!q) return res.status(400).json({ error: 'Missing query parameter q' });
   const docs = retrieveRelevantDocs(q, policies);
   res.json({ query: q, results: docs });
 });
+
+
+
+
 
 
 
@@ -263,11 +337,19 @@ app.get('/api/tools/fines/:plateNumber', (req, res) => {
 
 
 
+
+
+
+
 app.post('/api/tools/appointment', (req, res) => {
   const { service, date } = req.body;
   if (!service || !date) return res.status(400).json({ error: 'Missing service or date' });
   res.json(bookAppointment(service, date));
 });
+
+
+
+
 
 
 
@@ -280,9 +362,17 @@ app.delete('/api/session/:sessionId', (req, res) => {
 
 
 
+
+
+
+
 // ─────────────────────────────────────────
 // MAIN CHAT ENDPOINT
 // ─────────────────────────────────────────
+
+
+
+
 
 
 
@@ -293,9 +383,17 @@ app.post('/api/chat', async (req, res) => {
 
 
 
+
+
+
+
   if (!message || typeof message !== 'string') {
     return res.status(400).json({ error: 'Missing or invalid message' });
   }
+
+
+
+
 
 
 
@@ -317,8 +415,16 @@ app.post('/api/chat', async (req, res) => {
 
 
 
+
+
+
+
   // ── 2. Language detection ──────────────────────────────────────────
   const isArabic = detectArabic(message);
+
+
+
+
 
 
 
@@ -326,6 +432,10 @@ app.post('/api/chat', async (req, res) => {
   // ── 3. Session + memory ────────────────────────────────────────────
   const sid = sessionId || 'default';
   const session = sessionStore.getSession(sid);
+
+
+
+
 
 
 
@@ -345,6 +455,10 @@ app.post('/api/chat', async (req, res) => {
 
 
 
+
+
+
+
   const incomingTopic   = detectTopicGroup(message);
   const incomingEmirate = detectEmirate(message);
   const topicChanged    = incomingTopic && priorTopic && incomingTopic !== priorTopic;
@@ -352,9 +466,17 @@ app.post('/api/chat', async (req, res) => {
 
 
 
+
+
+
+
   if (incomingTopic)   session.currentTopic   = incomingTopic;
   if (incomingEmirate) session.currentEmirate = incomingEmirate;
   session.topicChanged = topicChanged;
+
+
+
+
 
 
 
@@ -368,10 +490,18 @@ app.post('/api/chat', async (req, res) => {
 
 
 
+
+
+
+
   // ── 4. Follow-up enrichment ────────────────────────────────────────
   const followUp = isFollowUp(message) && (priorTopic || priorEmirate);
   let retrievalMessage = message;
   if (followUp) retrievalMessage = enrichFollowUp(message, session);
+
+
+
+
 
 
 
@@ -383,7 +513,15 @@ app.post('/api/chat', async (req, res) => {
 
 
 
+
+
+
+
   const toolIntent = mightNeedTool ? await detectToolIntentWithLLM(message) : null;
+
+
+
+
 
 
 
@@ -407,7 +545,15 @@ app.post('/api/chat', async (req, res) => {
 
 
 
+
+
+
+
     const toolResult = bookAppointment(toolIntent.params.service, toolIntent.params.date);
+
+
+
+
 
 
 
@@ -422,8 +568,16 @@ app.post('/api/chat', async (req, res) => {
 
 
 
+
+
+
+
     sessionStore.addToHistory(session, 'user', message);
     sessionStore.addToHistory(session, 'assistant', toolReply);
+
+
+
+
 
 
 
@@ -431,6 +585,13 @@ app.post('/api/chat', async (req, res) => {
     return res.json({
       reply: toolReply,
       guardrail: { triggered: false },
+      // AUDIT NOTE (this round): sessionId was never echoed back in ANY
+      // response branch — confirmed via chat.spec.js's TC_CHAT_006/049,
+      // which use current, valid content and still failed on this alone.
+      // topicChanged was similarly missing from this branch's memory
+      // object specifically (present in the other two branches, just not
+      // this one) — added here for consistency across all three.
+      sessionId: sid,
       retrievedDocs: [],
       toolUsed: { name: toolIntent.tool, params: toolIntent.params, result: toolResult },
       trace: {
@@ -445,10 +606,15 @@ app.post('/api/chat', async (req, res) => {
         ],
       },
       language: isArabic ? 'ar' : 'en',
-      memory: { turns: session.topicTurns, topic: session.currentTopic, emirate: session.currentEmirate },
+      memory: { turns: session.topicTurns, topic: session.currentTopic, emirate: session.currentEmirate, topicChanged },
+      topicChanged,
       confidence: { level: 'high', label: 'Tool result', policyId: null, reason: 'Live data from government system' },
     });
   }
+
+
+
+
 
 
 
@@ -461,6 +627,10 @@ app.post('/api/chat', async (req, res) => {
 
 
 
+
+
+
+
   if (docs.length === 0) {
     const noResultReply = isArabic
       ? 'لم أتمكن من العثور على معلومات ذات صلة في قاعدة بيانات السياسات. يرجى زيارة البوابة الإلكترونية للإمارة المعنية للحصول على المساعدة.'
@@ -468,13 +638,19 @@ app.post('/api/chat', async (req, res) => {
     return res.json({
       reply: noResultReply,
       guardrail: { triggered: false },
+      sessionId: sid,
       retrievedDocs: [],
       toolUsed: null,
       language: isArabic ? 'ar' : 'en',
       memory: { turns: session.topicTurns, topic: session.currentTopic, emirate: session.currentEmirate, topicChanged },
+      topicChanged,
       confidence: { level: 'low', label: 'Low confidence', policyId: null, reason: 'No matching policies found' },
     });
   }
+
+
+
+
 
 
 
@@ -485,8 +661,16 @@ app.post('/api/chat', async (req, res) => {
 
 
 
+
+
+
+
   // ── 8. Build prompt ───────────────────────────────────────────────
   const context = docs.map(d => `[${d.id}] ${d.title} (${d.emirate || 'UAE'}):\n${d.content}`).join('\n\n');
+
+
+
+
 
 
 
@@ -498,9 +682,17 @@ app.post('/api/chat', async (req, res) => {
 
 
 
+
+
+
+
   const topicFocusInstruction = followUp && session.currentTopic
     ? `\nThe user is asking a follow-up about ${session.currentTopic}${session.currentEmirate ? ` in ${session.currentEmirate}` : ''}. Answer ONLY about ${session.currentTopic} — do not introduce other topics.`
     : '';
+
+
+
+
 
 
 
@@ -515,7 +707,15 @@ app.post('/api/chat', async (req, res) => {
 
 
 
+
+
+
+
   const systemPrompt = `${ACTIVE_SYSTEM_PROMPT}${languageInstruction}${topicFocusInstruction}${historyContext}\n\nPOLICY CONTEXT:\n${context}`;
+
+
+
+
 
 
 
@@ -537,7 +737,15 @@ app.post('/api/chat', async (req, res) => {
 
 
 
+
+
+
+
     const llmReply = sanitiseOutput(guardResult.reply, isArabic);
+
+
+
+
 
 
 
@@ -548,9 +756,14 @@ app.post('/api/chat', async (req, res) => {
 
 
 
+
+
+
+
     res.json({
       reply: llmReply,
       guardrail: { triggered: false },
+      sessionId: sid,
       outputGuardrail: {
         formatValid: guardResult.formatValid,
         reaskCount: guardResult.reaskCount,
@@ -579,8 +792,13 @@ app.post('/api/chat', async (req, res) => {
       toolUsed: null,
       language: isArabic ? 'ar' : 'en',
       memory: { turns: session.topicTurns, topic: session.currentTopic, emirate: session.currentEmirate, topicChanged },
+      topicChanged,
       confidence,
     });
+
+
+
+
 
 
 
@@ -617,9 +835,17 @@ app.post('/api/chat', async (req, res) => {
 
 
 
+
+
+
+
 // ─────────────────────────────────────────
 // START
 // ─────────────────────────────────────────
+
+
+
+
 
 
 
@@ -639,6 +865,10 @@ app.listen(PORT, () => {
   console.log(`Scope: All UAE government services EXCEPT transport (see Tawfeer) ✅`);
   console.log(`Core logic modularized under src/lib/ for unit testing ✅`);
 });
+
+
+
+
 
 
 
