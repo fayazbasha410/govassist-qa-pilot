@@ -2,8 +2,8 @@ name: Full Test Suite (Develop)
 
 
 on:
-  push:
-    branches: [ develop ]
+  pull_request:
+    branches: [ staging ]
 
 
 jobs:
