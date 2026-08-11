@@ -299,3 +299,42 @@ describe('defaults', () => {
 });
 
 
+// AUDIT NOTE: this is the exact scenario that broke pr-checks.yml's Boot
+// Smoke job in CI — no Supabase env vars configured, supabaseClient.js
+// exports supabase: null, and every method here needs to degrade
+// gracefully rather than throw. Permanent regression guard so this
+// doesn't silently break again.
+describe('graceful degradation when Supabase is not configured (client is null)', () => {
+  test('getSession returns a fresh session, does not throw', async () => {
+    const store = createSessionStore({ supabaseClient: null });
+    const s = await store.getSession('any-id');
+    expect(s).toMatchObject({
+      history: [],
+      currentTopic: null,
+      currentEmirate: null,
+      topicChanged: false,
+      topicTurns: 0,
+    });
+  });
+
+
+  test('saveSession resolves without throwing', async () => {
+    const store = createSessionStore({ supabaseClient: null });
+    const s = await store.getSession('any-id');
+    await expect(store.saveSession('any-id', s)).resolves.toBeUndefined();
+  });
+
+
+  test('deleteSession returns false, does not throw', async () => {
+    const store = createSessionStore({ supabaseClient: null });
+    expect(await store.deleteSession('any-id')).toBe(false);
+  });
+
+
+  test('cleanupExpired returns 0, does not throw', async () => {
+    const store = createSessionStore({ supabaseClient: null });
+    expect(await store.cleanupExpired()).toBe(0);
+  });
+});
+
+

@@ -48,7 +48,9 @@ const DEFAULT_TTL_MS = 30 * 60 * 1000;
 function createSessionStore(options = {}) {
   const maxTurns = options.maxTurns ?? DEFAULT_MAX_TURNS;
   const ttlMs = options.ttlMs ?? DEFAULT_TTL_MS;
-  const supabase = options.supabaseClient ?? require('./supabaseClient').supabase;
+  const supabase = 'supabaseClient' in options
+    ? options.supabaseClient
+    : require('./supabaseClient').supabase;
 
 
   function rowToSession(row) {
@@ -80,6 +82,9 @@ function createSessionStore(options = {}) {
 
 
   async function getSession(sessionId) {
+    if (!supabase) return freshSession();
+
+
     const { data, error } = await supabase
       .from('chat_sessions')
       .select('*')
@@ -118,6 +123,9 @@ function createSessionStore(options = {}) {
   // remain fully supported; linking a session to a logged-in user is a
   // separate, later step in the auth epic, not assumed here.
   async function saveSession(sessionId, session, userId = null) {
+    if (!supabase) return;
+
+
     const { error } = await supabase
       .from('chat_sessions')
       .upsert({
@@ -140,6 +148,9 @@ function createSessionStore(options = {}) {
 
 
   async function deleteSession(sessionId) {
+    if (!supabase) return false;
+
+
     // .select('id') on a delete returns the rows that were actually
     // deleted — needed because Supabase's delete() succeeds silently even
     // when zero rows matched, and callers reasonably expect to know
@@ -162,6 +173,9 @@ function createSessionStore(options = {}) {
   // Removes sessions inactive longer than the TTL. Returns the number
   // removed, same contract as the old in-memory version.
   async function cleanupExpired() {
+    if (!supabase) return 0;
+
+
     const cutoff = new Date(Date.now() - ttlMs).toISOString();
     const { data, error } = await supabase
       .from('chat_sessions')
