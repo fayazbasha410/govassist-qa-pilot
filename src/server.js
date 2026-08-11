@@ -12,6 +12,14 @@ const { checkFineStatus, bookAppointment } = require('./tools/agentTools');
 
 
 
+
+
+
+
+
+
+
+
 const { detectTopicGroup, detectEmirate, detectArabic } = require('./lib/textDetection');
 const { retrieveRelevantDocs, computeConfidence } = require('./lib/ragEngine');
 const { isFollowUp, enrichFollowUp } = require('./lib/followUp');
@@ -28,10 +36,26 @@ const { translateArabicQuery } = require('./lib/arabicTranslation');
 
 
 
+
+
+
+
+
+
+
+
 const app = express();
 app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, '../public')));
+
+
+
+
+
+
+
+
 
 
 
@@ -53,8 +77,24 @@ app.use(express.static(path.join(__dirname, '../public')));
 
 
 
+
+
+
+
+
+
+
+
 const sessionStore = createSessionStore();
 sessionStore.startCleanupInterval();
+
+
+
+
+
+
+
+
 
 
 
@@ -74,8 +114,24 @@ sessionStore.startCleanupInterval();
 
 
 
+
+
+
+
+
+
+
+
 const Groq = require('groq-sdk');
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+
+
+
+
+
+
+
+
 
 
 
@@ -110,6 +166,10 @@ function parseRetryAfterMs(err) {
 
 
 
+
+
+
+
 function computeBackoffMs(err, attempt) {
   const suggestedMs = parseRetryAfterMs(err);
   // Capped at 30s, not the full suggested wait, deliberately: several
@@ -123,6 +183,14 @@ function computeBackoffMs(err, attempt) {
   if (suggestedMs !== null) return Math.min(suggestedMs + 500, 30000);
   return (attempt * 6000) + Math.floor(Math.random() * 2000);
 }
+
+
+
+
+
+
+
+
 
 
 
@@ -165,9 +233,25 @@ async function callOllama(systemPrompt, userMessage, retries = 2) {
 
 
 
+
+
+
+
+
+
+
+
 // ─────────────────────────────────────────
 // GROQ NATIVE TOOL CALLING
 // ─────────────────────────────────────────
+
+
+
+
+
+
+
+
 
 
 
@@ -196,6 +280,14 @@ const TOOL_DEFINITIONS = [
     }
   }
 ];
+
+
+
+
+
+
+
+
 
 
 
@@ -244,9 +336,25 @@ async function detectToolIntentWithLLM(message, retries = 2) {
 
 
 
+
+
+
+
+
+
+
+
 // ─────────────────────────────────────────
 // SYSTEM PROMPT
 // ─────────────────────────────────────────
+
+
+
+
+
+
+
+
 
 
 
@@ -271,6 +379,14 @@ If the answer is not in the context, say so clearly and suggest the user visit t
 
 
 
+
+
+
+
+
+
+
+
 // ─────────────────────────────────────────
 // ROUTES
 // ─────────────────────────────────────────
@@ -282,7 +398,23 @@ If the answer is not in the context, say so clearly and suggest the user visit t
 
 
 
+
+
+
+
+
+
+
+
 app.get('/favicon.ico', (req, res) => res.status(204).end());
+
+
+
+
+
+
+
+
 
 
 
@@ -314,12 +446,28 @@ app.get('/api/health', (req, res) => {
 
 
 
+
+
+
+
+
+
+
+
 app.get('/api/policies/search', (req, res) => {
   const { q } = req.query;
   if (!q) return res.status(400).json({ error: 'Missing query parameter q' });
   const docs = retrieveRelevantDocs(q, policies);
   res.json({ query: q, results: docs });
 });
+
+
+
+
+
+
+
+
 
 
 
@@ -341,6 +489,14 @@ app.get('/api/tools/fines/:plateNumber', (req, res) => {
 
 
 
+
+
+
+
+
+
+
+
 app.post('/api/tools/appointment', (req, res) => {
   const { service, date } = req.body;
   if (!service || !date) return res.status(400).json({ error: 'Missing service or date' });
@@ -354,10 +510,26 @@ app.post('/api/tools/appointment', (req, res) => {
 
 
 
-app.delete('/api/session/:sessionId', (req, res) => {
-  sessionStore.deleteSession(req.params.sessionId);
+
+
+
+
+
+
+
+
+app.delete('/api/session/:sessionId', async (req, res) => {
+  await sessionStore.deleteSession(req.params.sessionId);
   res.json({ cleared: true });
 });
+
+
+
+
+
+
+
+
 
 
 
@@ -377,8 +549,24 @@ app.delete('/api/session/:sessionId', (req, res) => {
 
 
 
+
+
+
+
+
+
+
+
 app.post('/api/chat', async (req, res) => {
   const { message, sessionId } = req.body;
+
+
+
+
+
+
+
+
 
 
 
@@ -390,6 +578,14 @@ app.post('/api/chat', async (req, res) => {
   if (!message || typeof message !== 'string') {
     return res.status(400).json({ error: 'Missing or invalid message' });
   }
+
+
+
+
+
+
+
+
 
 
 
@@ -419,6 +615,14 @@ app.post('/api/chat', async (req, res) => {
 
 
 
+
+
+
+
+
+
+
+
   // ── 2. Language detection ──────────────────────────────────────────
   const isArabic = detectArabic(message);
 
@@ -429,9 +633,25 @@ app.post('/api/chat', async (req, res) => {
 
 
 
+
+
+
+
+
+
+
+
   // ── 3. Session + memory ────────────────────────────────────────────
   const sid = sessionId || 'default';
-  const session = sessionStore.getSession(sid);
+  const session = await sessionStore.getSession(sid);
+
+
+
+
+
+
+
+
 
 
 
@@ -459,6 +679,14 @@ app.post('/api/chat', async (req, res) => {
 
 
 
+
+
+
+
+
+
+
+
   const incomingTopic   = detectTopicGroup(message);
   const incomingEmirate = detectEmirate(message);
   // AUDIT NOTE (this round): confirmed via a real CI failure that this was
@@ -477,9 +705,25 @@ app.post('/api/chat', async (req, res) => {
 
 
 
+
+
+
+
+
+
+
+
   if (incomingTopic)   session.currentTopic   = incomingTopic;
   if (incomingEmirate) session.currentEmirate = incomingEmirate;
   session.topicChanged = topicChanged;
+
+
+
+
+
+
+
+
 
 
 
@@ -501,6 +745,14 @@ app.post('/api/chat', async (req, res) => {
 
 
 
+
+
+
+
+
+
+
+
   // ── 4. Follow-up enrichment ────────────────────────────────────────
   const followUp = isFollowUp(message) && (priorTopic || priorEmirate);
   let retrievalMessage = message;
@@ -513,8 +765,24 @@ app.post('/api/chat', async (req, res) => {
 
 
 
+
+
+
+
+
+
+
+
   // ── 5. Tool intent detection (only if booking keyword present) ────
-  const BOOKING_KEYWORDS = ['book', 'appointment', 'schedule', 'reserve', 'slot'];
+  // AUDIT NOTE: this pre-check was English-only, so an Arabic booking
+  // request (e.g. "أريد حجز موعد") never triggered detectToolIntentWithLLM
+  // at all and silently fell through to the RAG path instead. Found while
+  // fixing TC_CHAT_042 in v3.13.0's chat.spec.js audit — flagged then,
+  // fixed here.
+  const BOOKING_KEYWORDS = [
+    'book', 'appointment', 'schedule', 'reserve', 'slot',
+    'حجز', 'موعد', 'احجز', 'جدولة',
+  ];
   const mightNeedTool    = BOOKING_KEYWORDS.some(k => message.toLowerCase().includes(k));
 
 
@@ -524,7 +792,23 @@ app.post('/api/chat', async (req, res) => {
 
 
 
+
+
+
+
+
+
+
+
   const toolIntent = mightNeedTool ? await detectToolIntentWithLLM(message) : null;
+
+
+
+
+
+
+
+
 
 
 
@@ -556,7 +840,23 @@ app.post('/api/chat', async (req, res) => {
 
 
 
+
+
+
+
+
+
+
+
     const toolResult = bookAppointment(toolIntent.params.service, toolIntent.params.date);
+
+
+
+
+
+
+
+
 
 
 
@@ -579,8 +879,25 @@ app.post('/api/chat', async (req, res) => {
 
 
 
+
+
+
+
+
+
+
+
     sessionStore.addToHistory(session, 'user', message);
     sessionStore.addToHistory(session, 'assistant', toolReply);
+    await sessionStore.saveSession(sid, session);
+
+
+
+
+
+
+
+
 
 
 
@@ -626,6 +943,14 @@ app.post('/api/chat', async (req, res) => {
 
 
 
+
+
+
+
+
+
+
+
   // ── 6. RAG retrieval ──────────────────────────────────────────────
   const retrievalQuery = isArabic ? translateArabicQuery(retrievalMessage) : retrievalMessage;
   const topK = followUp ? 2 : 5;
@@ -638,10 +963,24 @@ app.post('/api/chat', async (req, res) => {
 
 
 
+
+
+
+
+
+
+
+
   if (docs.length === 0) {
     const noResultReply = isArabic
       ? 'لم أتمكن من العثور على معلومات ذات صلة في قاعدة بيانات السياسات. يرجى زيارة البوابة الإلكترونية للإمارة المعنية للحصول على المساعدة.'
       : "I couldn't find relevant information in our policy database. Please visit the relevant UAE emirate portal for assistance.";
+    // No addToHistory here — matches existing behavior, this reply was
+    // never added to conversation history. Still saving the session,
+    // though: currentTopic/currentEmirate/topicTurns were mutated in
+    // step 3 above regardless of which branch we end up in, and those
+    // need to persist too.
+    await sessionStore.saveSession(sid, session);
     return res.json({
       reply: noResultReply,
       guardrail: { triggered: false },
@@ -662,6 +1001,14 @@ app.post('/api/chat', async (req, res) => {
 
 
 
+
+
+
+
+
+
+
+
   // ── 7. Confidence scoring ─────────────────────────────────────────
   const confidence = computeConfidence(docs, retrievalQuery);
 
@@ -672,8 +1019,24 @@ app.post('/api/chat', async (req, res) => {
 
 
 
+
+
+
+
+
+
+
+
   // ── 8. Build prompt ───────────────────────────────────────────────
   const context = docs.map(d => `[${d.id}] ${d.title} (${d.emirate || 'UAE'}):\n${d.content}`).join('\n\n');
+
+
+
+
+
+
+
+
 
 
 
@@ -693,9 +1056,25 @@ app.post('/api/chat', async (req, res) => {
 
 
 
+
+
+
+
+
+
+
+
   const topicFocusInstruction = followUp && session.currentTopic
     ? `\nThe user is asking a follow-up about ${session.currentTopic}${session.currentEmirate ? ` in ${session.currentEmirate}` : ''}. Answer ONLY about ${session.currentTopic} — do not introduce other topics.`
     : '';
+
+
+
+
+
+
+
+
 
 
 
@@ -718,7 +1097,23 @@ app.post('/api/chat', async (req, res) => {
 
 
 
+
+
+
+
+
+
+
+
   const systemPrompt = `${ACTIVE_SYSTEM_PROMPT}${languageInstruction}${topicFocusInstruction}${historyContext}\n\nPOLICY CONTEXT:\n${context}`;
+
+
+
+
+
+
+
+
 
 
 
@@ -743,28 +1138,12 @@ app.post('/api/chat', async (req, res) => {
 
 
 
-
-
-
-
-
     const llmReply = sanitiseOutput(guardResult.reply, isArabic);
-
-
-
-
-
-
 
 
     sessionStore.addToHistory(session, 'user', message);
     sessionStore.addToHistory(session, 'assistant', llmReply);
-
-
-
-
-
-
+    await sessionStore.saveSession(sid, session);
 
 
     res.json({
@@ -805,11 +1184,6 @@ app.post('/api/chat', async (req, res) => {
 
 
 
-
-
-
-
-
   } catch (err) {
     // AUDIT NOTE (this round): err.message alone wasn't enough to tell a
     // 429 rate-limit apart from a timeout or a genuine 5xx — all three
@@ -821,6 +1195,11 @@ app.post('/api/chat', async (req, res) => {
     // logging both, defensively, without assuming either is present.
     const errStatus = err.status ?? err.code ?? 'unknown';
     console.error(`LLM error [${errStatus}]:`, err.message);
+    // Deliberately NOT calling saveSession here — the LLM call failed, so
+    // this turn didn't really complete. Leaving the session as it was
+    // before this turn (not committing the topic-detection mutations from
+    // a failed attempt) means the next real turn's "prior topic" check
+    // still compares against the last successful state, not a half-turn.
     const fallbackReply = isArabic
       ? 'عذراً، المساعد غير متاح مؤقتاً. يرجى المحاولة مرة أخرى.'
       : 'Sorry, the assistant is temporarily unavailable. Please try again.';
@@ -842,19 +1221,9 @@ app.post('/api/chat', async (req, res) => {
 
 
 
-
-
-
-
 // ─────────────────────────────────────────
 // START
 // ─────────────────────────────────────────
-
-
-
-
-
-
 
 
 const PORT = process.env.PORT || 3000;
@@ -874,12 +1243,4 @@ app.listen(PORT, () => {
 });
 
 
-
-
-
-
-
-
 module.exports = app;
-
-
