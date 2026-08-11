@@ -1,25 +1,35 @@
-name: PR Checks (feature → develop)
+name: QA Checks (develop → qa)
+
+
 
 
 on:
   pull_request:
-    branches: [ develop ]
+    branches: [ qa ]
+
+
 
 
 env:
   GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
 
 
+
+
 jobs:
-  # ── Job 1: Unit tests (Vitest) — fastest job, no server, runs in parallel ──
+  # ── Job 1: Unit tests (Vitest) — re-run here too, cheap and self-contained ──
   unit-tests:
     name: Unit Tests
     runs-on: ubuntu-latest
     timeout-minutes: 5
 
 
+
+
     steps:
       - uses: actions/checkout@v4
+
+
 
 
       - uses: actions/setup-node@v4
@@ -28,22 +38,32 @@ jobs:
           cache: 'npm'
 
 
+
+
       - run: npm ci
+
+
 
 
       - name: Run Vitest unit suite
         run: npm run test:unit
 
 
-  # ── Job 2: Schema validation (no server needed, free) ──
+
+
+  # ── Job 2: Schema validation — re-run here too ──
   schema-validation:
     name: Schema Validation
     runs-on: ubuntu-latest
     timeout-minutes: 5
 
 
+
+
     steps:
       - uses: actions/checkout@v4
+
+
 
 
       - uses: actions/setup-node@v4
@@ -52,7 +72,11 @@ jobs:
           cache: 'npm'
 
 
+
+
       - run: npm ci
+
+
 
 
       - name: Validate policy data
@@ -71,6 +95,8 @@ jobs:
           "
 
 
+
+
       - name: Validate test data
         run: |
           node -e "
@@ -83,22 +109,25 @@ jobs:
           "
 
 
-  # ── Job 3: Boot smoke — does the app even start? ZERO Groq cost. ──
-  # Deliberately does not hit /api/chat (that's the only route that calls
-  # the LLM). /api/health and /api/policies/search are pure Node/retrieval
-  # logic, so this catches wiring bugs (bad imports, broken routes, server
-  # crash on startup) for free, on every single feature PR, without
-  # touching the Groq token budget at all. The full LLM-dependent E2E
-  # suite now runs later, at develop → qa, not here.
-  boot-smoke:
-    name: Boot Smoke
+
+
+  # ── Job 3: Smoke tests — ~40 tests, no LLM-heavy specs ──
+  # Moved here from pr-checks.yml (feature → develop) so this Groq-heavy
+  # suite runs once per develop → qa promotion, not once per every
+  # individual feature PR.
+  smoke-tests:
+    name: Smoke Tests
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 40
     needs: schema-validation
+
+
 
 
     steps:
       - uses: actions/checkout@v4
+
+
 
 
       - uses: actions/setup-node@v4
@@ -107,7 +136,16 @@ jobs:
           cache: 'npm'
 
 
+
+
       - run: npm ci
+
+
+
+
+      - run: npx playwright install --with-deps chromium
+
+
 
 
       - name: Start server
@@ -121,23 +159,69 @@ jobs:
           done
 
 
-      - name: Verify /api/health responds correctly
-        run: |
-          curl -sf http://localhost:3000/api/health -o /tmp/health_response.json
-          cat /tmp/health_response.json
-          node -e "
-          const data = JSON.parse(require('fs').readFileSync('/tmp/health_response.json', 'utf8'));
-          if (data.status !== 'ok') { console.error('Health check did not return ok'); process.exit(1); }
-          console.log('Health check OK ✅');
-          "
 
 
-      - name: Verify /api/policies/search responds correctly (no Groq call)
+      - name: Run smoke suite
+        run: npx playwright test tests/specs/api/health.spec.js tests/specs/api/fines.spec.js tests/specs/api/appointments.spec.js tests/specs/ui/
+
+
+
+
+      - name: Upload report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: qa-smoke-report
+          path: playwright-report/
+          retention-days: 3
+
+
+
+
+  # ── Job 4: Guardrail smoke ──
+  # Moved here from pr-checks.yml for the same reason — not fully
+  # Groq-free (redteam cases that aren't blocked outright still hit the
+  # LLM), so it belongs at the qa promotion gate, not on every feature PR.
+  guardrail-smoke:
+    name: Guardrail Smoke
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    needs: schema-validation
+
+
+
+
+    steps:
+      - uses: actions/checkout@v4
+
+
+
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+
+
+
+      - run: npm ci
+
+
+
+
+      - name: Start server
         run: |
-          curl -sf "http://localhost:3000/api/policies/search?q=emirates+id" -o /tmp/search_response.json
-          node -e "
-          const data = JSON.parse(require('fs').readFileSync('/tmp/search_response.json', 'utf8'));
-          if (!Array.isArray(data.results)) { console.error('Search did not return a results array'); process.exit(1); }
-          if (data.results.length === 0) { console.error('Search returned zero results for a known-good query'); process.exit(1); }
-          console.log('Policy search OK ✅ (' + data.results.length + ' results)');
-          "
+          npm start &
+          for i in {1..30}; do
+            curl -sf http://localhost:3000/api/health && break
+            sleep 3
+          done
+
+
+
+
+      - name: Run red team smoke (guardrails only)
+        run: npm run eval:redteam
+
+
