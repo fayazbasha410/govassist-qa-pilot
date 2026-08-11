@@ -8,11 +8,17 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 
+
+
 const EN = require('./locale_en.json');
 const AR = require('./locale_ar.json');
 
 
+
+
 const UAE_EMIRATES = Object.values(EN.emirates);
+
+
 
 
 // ── Appointments ─────────────────────────────────────────────────────────────
@@ -59,11 +65,15 @@ const APPOINTMENTS = {
 };
 
 
+
+
 const VALID_SERVICES = [
  'emirates-id',
  'residency-visa',
  'health-card'
 ];
+
+
 
 
 // ── Policy Queries ────────────────────────────────────────────────────────────
@@ -78,6 +88,8 @@ const POLICY_QUERIES = {
  gratuity: { query: 'end of service gratuity UAE', expectedId: 'POL-028' },
 
 
+
+
  // Abu Dhabi
  healthCardAD: { query: 'health card application Abu Dhabi', expectedId: 'POL-010' },
  schoolAD: { query: 'school enrollment Abu Dhabi ADEK', expectedId: 'POL-012' },
@@ -86,11 +98,15 @@ const POLICY_QUERIES = {
  tradeAD: { query: 'trade license renewal Abu Dhabi', expectedId: 'POL-022' },
 
 
+
+
  // Dubai
  schoolDubai: { query: 'school enrollment Dubai KHDA', expectedId: 'POL-011' },
  healthInsDubai: { query: 'health insurance Dubai DHA', expectedId: 'POL-014' },
  ejariDubai: { query: 'Ejari tenancy registration Dubai', expectedId: 'POL-018' },
  tradeDubai: { query: 'trade license renewal Dubai DET', expectedId: 'POL-021' },
+
+
 
 
  // Northern Emirates
@@ -107,6 +123,7 @@ const POLICY_QUERIES = {
  schoolFujairah: { query: 'school enrollment Fujairah', expectedId: 'POL-054' },
  tradeFujairah: { query: 'trade license Fujairah', expectedId: 'POL-055' },
 
+
  // Step 3 additions (v3.7.0) — verified against live RAG scoring, each
  // query's expected policy ranks #1 in the top-5 results
  moiServices: { query: 'lost Emirates ID replacement passport', expectedId: 'POL-056' },
@@ -121,6 +138,8 @@ const POLICY_QUERIES = {
  tammPlatform: { query: 'TAMM platform Abu Dhabi digital services', expectedId: 'POL-065' },
  dldRera: { query: 'Dubai Land Department RERA rent dispute', expectedId: 'POL-066' },
 };
+
+
 
 
 // ── Guardrail Inputs ─────────────────────────────────────────────────────────
@@ -162,6 +181,8 @@ const GUARDRAIL_INPUTS = {
 };
 
 
+
+
 // ── Chat Messages ─────────────────────────────────────────────────────────────
 const CHAT_MESSAGES = {
  // English — core services
@@ -178,9 +199,13 @@ const CHAT_MESSAGES = {
  gratuity: 'How is end of service gratuity calculated?',
 
 
+
+
  // English — tool calls
  bookAppointment: 'Book an appointment for emirates-id on 2025-03-15',
  bookEmiratesId: 'Book an appointment for emirates-id on 2025-04-10',
+
+
 
 
  // English — emirate-specific (non-transport)
@@ -191,16 +216,22 @@ const CHAT_MESSAGES = {
  healthUAQ: 'Is health insurance mandatory in Umm Al Quwain?',
 
 
+
+
  schoolFujairah: 'How do I enroll my child in school in Fujairah?',
  schoolRAK: 'How do I enroll my child in school in Ras Al Khaimah?',
  schoolAjman: 'How do I enroll my child in school in Ajman?',
  schoolSharjah: 'How do I enroll my child in school in Sharjah?',
 
 
+
+
  tradeSharjah: 'How do I renew my trade license in Sharjah?',
  tradeRAK: 'How do I renew my trade license in Ras Al Khaimah?',
  tradeFujairah: 'How do I renew my trade license in Fujairah?',
  tradeAjman: 'How do I renew my trade license in Ajman?',
+
+
 
 
  // English — Step 3 new policy categories (v3.7.0), used in UI tests
@@ -215,12 +246,15 @@ const CHAT_MESSAGES = {
  tammPlatform: 'Tell me about the TAMM platform services in Abu Dhabi.',
  dldRentDispute: 'How do I file a rent dispute in Dubai?',
 
+
  // English — memory / follow-up
  followUpDubai: 'what about Dubai?',
  followUpAjman: 'what about Ajman?',
  followUpRAK: 'what about Ras Al Khaimah?',
  followUpFujairah: 'what about Fujairah?',
  followUpSharjah: 'what about Sharjah?',
+
+
 
 
  // English — edge cases
@@ -231,6 +265,8 @@ const CHAT_MESSAGES = {
  sqlInjection: "'; DROP TABLE policies; --",
  htmlInjection: '<script>alert("xss")</script>',
  numberOnly: '12345',
+
+
 
 
  // Arabic messages
@@ -246,13 +282,22 @@ const CHAT_MESSAGES = {
 };
 
 
+
+
 // ── Response Time Thresholds ─────────────────────────────────────────────────
 const RESPONSE_TIMES = {
  healthCheck: 500,    // ms — health endpoint should be instant
- toolCall: 3000,   // ms — appointment booking (no LLM) should be fast
+ // AUDIT NOTE (this round): was 3000ms with a comment claiming "no LLM" —
+ // that was true under the old keyword-matching tool detection, but
+ // detectToolIntentWithLLM (native Groq function calling) replaced that
+ // and does make a real LLM call. Real CI runs consistently measured
+ // 3.2-3.3s, just over the old threshold. Bumped with real margin.
+ toolCall: 6000,   // ms — appointment booking tool-intent detection (real Groq call, small)
  ragResponse: 15000,  // ms — LLM + RAG response
  arabicResponse: 15000,  // ms — same as RAG
 };
+
+
 
 
 module.exports = {
