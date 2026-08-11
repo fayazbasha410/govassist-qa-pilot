@@ -6,12 +6,20 @@
   "scripts": {
     "start": "node src/server.js",
     "test": "npx playwright test",
-    "eval": "cd eval/configs && promptfoo eval --config promptfoo.yaml",
+    "test:unit": "vitest run",
+    "test:unit:watch": "vitest",
+    "check-quota": "node scripts/check-quota.js",
+    "eval": "promptfoo eval --config eval/configs/promptfoo.yaml --max-concurrency 1 --no-cache",
     "eval:regression": "node eval/regression-gate.js",
     "eval:redteam": "node eval/adversarial/red-team.js",
     "eval:prod": "node eval/prod-simulator/prod-eval.js",
     "eval:dashboard": "node eval/observability/dashboard.js && open eval/observability/dashboard.html",
     "eval:view": "cd eval/configs && promptfoo view",
+    "eval:deepeval": "node eval/deepeval-metrics.js",
+    "eval:deepeval:live": "node eval/deepeval-metrics.js --live",
+    "eval:perf-trend": "node eval/performance-benchmark.js",
+    "eval:bias": "node eval/bias-check.js",
+    "eval:conversational": "node eval/conversational-eval.js",
     "perf": "k6 run tests/performance/load-test.js"
   },
   "keywords": [],
@@ -27,9 +35,10 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.61.1",
-    "@types/node": "^26.1.1"
+    "@types/node": "^26.1.1",
+    "vitest": "^4.1.10"
   },
   "engines": {
-  "node": ">=20.0.0"
-}
+    "node": ">=22.0.0"
+  }
 }
