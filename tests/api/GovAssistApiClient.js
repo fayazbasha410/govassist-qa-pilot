@@ -4,7 +4,11 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 
+
+
 const BASE_URL = process.env.BASE_URL || 'http://localhost:3000';
+
+
 
 
 class GovAssistApiClient {
@@ -28,11 +32,15 @@ class GovAssistApiClient {
   }
 
 
+
+
   // ── Health ──────────────────────────────────────────────────────────────────
   async getHealth() {
     const res = await this.request.get(`${this.baseUrl}/api/health`);
     return { status: res.status(), body: await res.json() };
   }
+
+
 
 
   // ── Policies ────────────────────────────────────────────────────────────────
@@ -44,6 +52,8 @@ class GovAssistApiClient {
   }
 
 
+
+
   async searchPoliciesRaw(queryString = '') {
     const url = queryString
       ? `${this.baseUrl}/api/policies/search?${queryString}`
@@ -53,6 +63,8 @@ class GovAssistApiClient {
   }
 
 
+
+
   // ── Fines ───────────────────────────────────────────────────────────────────
   async getFines(plateNumber) {
     const res = await this.request.get(
@@ -60,6 +72,8 @@ class GovAssistApiClient {
     );
     return { status: res.status(), body: await res.json() };
   }
+
+
 
 
   // ── Appointments ─────────────────────────────────────────────────────────────
@@ -72,6 +86,8 @@ class GovAssistApiClient {
   }
 
 
+
+
   async bookAppointmentRaw(payload) {
     const res = await this.request.post(
       `${this.baseUrl}/api/tools/appointment`,
@@ -79,6 +95,8 @@ class GovAssistApiClient {
     );
     return { status: res.status(), body: await res.json() };
   }
+
+
 
 
   // ── Chat ─────────────────────────────────────────────────────────────────────
@@ -94,6 +112,8 @@ class GovAssistApiClient {
   }
 
 
+
+
   // NOTE: intentionally does NOT apply defaultSessionId — this method exists
   // for tests that need full, unmodified control over the payload (e.g.
   // malformed-input / validation tests). Use sendChat() for anything that
@@ -107,14 +127,26 @@ class GovAssistApiClient {
   }
 
 
+
+
   // ── Session ──────────────────────────────────────────────────────────────────
+  // AUDIT NOTE (this round): confirmed via a real CI failure that this was
+  // calling a route that never existed. server.js only defines
+  // `DELETE /api/session/:sessionId` — this was POSTing to
+  // `/api/session/clear` with sessionId in the body instead, which Express
+  // 404s on (returning its default HTML error page), causing a JSON parse
+  // error here every single time this method was called. This bug
+  // predates this session's fixes; it only got exercised now because
+  // TC_CHAT_055/056 previously failed earlier in their own test body
+  // (undefined CHAT_MESSAGES content) before ever reaching this call.
   async clearSession(sessionId) {
-    const res = await this.request.post(
-      `${this.baseUrl}/api/session/clear`,
-      { data: { sessionId } }
+    const res = await this.request.delete(
+      `${this.baseUrl}/api/session/${sessionId}`
     );
     return { status: res.status(), body: await res.json() };
   }
+
+
 
 
   // ── Multi-turn conversation helper ───────────────────────────────────────────
@@ -129,6 +161,8 @@ class GovAssistApiClient {
     return responses;
   }
 }
+
+
 
 
 module.exports = { GovAssistApiClient };
