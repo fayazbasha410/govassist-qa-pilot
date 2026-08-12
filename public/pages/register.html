@@ -9,6 +9,8 @@
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
 
+
+
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
       background: #f0f4f8;
@@ -19,11 +21,15 @@
     }
 
 
+
+
     .uae-stripe { width: 100%; height: 6px; display: flex; }
     .uae-stripe .red   { background: #EF3340; flex: 1; }
     .uae-stripe .green { background: #009A44; flex: 2; }
     .uae-stripe .white { background: #ffffff; flex: 2; border-bottom: 1px solid #ddd; }
     .uae-stripe .black { background: #000000; flex: 2; }
+
+
 
 
     header {
@@ -40,6 +46,8 @@
     .header-right   { display: flex; align-items: center; gap: 10px; }
 
 
+
+
     #lang-toggle-btn {
       background: transparent;
       border: 1px solid rgba(255,255,255,0.5);
@@ -51,6 +59,8 @@
       transition: all 0.2s;
     }
     #lang-toggle-btn:hover { background: rgba(255,255,255,0.15); }
+
+
 
 
     .pride-line {
@@ -65,6 +75,8 @@
     }
 
 
+
+
     #auth-container {
       width: 100%;
       max-width: 420px;
@@ -74,6 +86,8 @@
       padding: 16px 16px 24px;
       gap: 16px;
     }
+
+
 
 
     .auth-card {
@@ -92,6 +106,8 @@
       color: #666;
       margin-bottom: 20px;
     }
+
+
 
 
     .field { margin-bottom: 14px; }
@@ -122,6 +138,8 @@
     }
 
 
+
+
     #submit-btn {
       width: 100%;
       background: #006241;
@@ -139,6 +157,8 @@
     #submit-btn:disabled { background: #aaa; cursor: not-allowed; }
 
 
+
+
     #error-msg {
       background: #fee2e2;
       color: #dc2626;
@@ -151,6 +171,8 @@
     #error-msg.show { display: block; }
 
 
+
+
     .auth-links {
       text-align: center;
       font-size: 0.85rem;
@@ -159,6 +181,8 @@
     }
     .auth-links a { color: #006241; font-weight: 600; text-decoration: none; }
     .auth-links a:hover { text-decoration: underline; }
+
+
 
 
     .guest-link {
@@ -171,6 +195,8 @@
       text-decoration: none;
     }
     .guest-link a:hover { color: #006241; }
+
+
 
 
     footer {
@@ -187,6 +213,8 @@
     footer .proud { color: #c0001a; font-weight: 600; }
 
 
+
+
     html[dir="rtl"] .field input,
     html[dir="rtl"] .field select { text-align: right; }
     html[dir="rtl"] .header-right { flex-direction: row-reverse; }
@@ -195,10 +223,14 @@
 <body>
 
 
+
+
   <div class="uae-stripe">
     <div class="red"></div><div class="green"></div>
     <div class="white"></div><div class="black"></div>
   </div>
+
+
 
 
   <header>
@@ -212,7 +244,11 @@
   </header>
 
 
+
+
   <div class="pride-line" data-i18n="prideLine">Proudly serving UAE residents across all 7 emirates</div>
+
+
 
 
   <div id="auth-container">
@@ -221,7 +257,11 @@
       <p class="subtitle" data-i18n="registerSubtitle">Save your conversation history across devices</p>
 
 
+
+
       <div id="error-msg" data-test-id="register-error"></div>
+
+
 
 
       <form id="register-form">
@@ -235,7 +275,7 @@
         </div>
         <div class="field">
           <label data-i18n="passwordLabel">Password</label>
-          <input type="password" id="password" data-test-id="register-password" required autocomplete="new-password" minlength="6">
+          <input type="password" id="password" data-test-id="register-password" required autocomplete="new-password">
           <div class="hint" data-i18n="passwordHint">At least 6 characters</div>
         </div>
         <div class="field">
@@ -262,6 +302,8 @@
       </form>
 
 
+
+
       <div class="auth-links">
         <span data-i18n="hasAccount">Already have an account?</span>
         <a href="/pages/login.html" data-i18n="signInLink">Sign in</a>
@@ -273,14 +315,20 @@
   </div>
 
 
+
+
   <footer>
     <div>Built by <strong>Fayaz Basha Shaik</strong> &nbsp;|&nbsp; <span class="proud">🇦🇪 Proud of UAE</span> &nbsp;|&nbsp; افخر بالامارات</div>
     <div>&copy; 2026 GovMurshid — UAE Government Services AI. All rights reserved.</div>
   </footer>
 
 
+
+
   <script>
     requireGuest();
+
+
 
 
     var STRINGS = {
@@ -325,7 +373,11 @@
     };
 
 
+
+
     var currentLang = 'en';
+
+
 
 
     function applyLang() {
@@ -340,18 +392,26 @@
     }
 
 
+
+
     function toggleLang() {
       currentLang = currentLang === 'en' ? 'ar' : 'en';
       applyLang();
     }
 
 
+
+
     applyLang();
+
+
 
 
     var form = document.getElementById('register-form');
     var submitBtn = document.getElementById('submit-btn');
     var errorMsg = document.getElementById('error-msg');
+
+
 
 
     function showError(msg) {
@@ -363,9 +423,13 @@
     }
 
 
+
+
     form.addEventListener('submit', function (e) {
       e.preventDefault();
       hideError();
+
+
 
 
       var name = document.getElementById('name').value.trim();
@@ -375,6 +439,8 @@
       var emirate = document.getElementById('emirate').value;
 
 
+
+
       if (password !== confirmPassword) {
         var msg = currentLang === 'ar' ? 'كلمتا المرور غير متطابقتين.' : 'Passwords do not match.';
         showError(msg);
@@ -382,7 +448,11 @@
       }
 
 
+
+
       submitBtn.disabled = true;
+
+
 
 
       fetch('/api/auth/register', {
