@@ -9,6 +9,7 @@
     "test:unit": "vitest run",
     "test:unit:watch": "vitest",
     "check-quota": "node scripts/check-quota.js",
+    "seed-test-user": "node scripts/seed-test-user.js",
     "eval": "promptfoo eval --config eval/configs/promptfoo.yaml --max-concurrency 1 --no-cache",
     "eval:regression": "node eval/regression-gate.js",
     "eval:redteam": "node eval/adversarial/red-team.js",
@@ -29,6 +30,7 @@
   "dependencies": {
     "@axe-core/playwright": "^4.12.1",
     "@supabase/supabase-js": "^2.110.8",
+    "bcryptjs": "^2.4.3",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
@@ -43,3 +45,5 @@
     "node": ">=22.0.0"
   }
 }
+
+
