@@ -50,6 +50,9 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, '../public')));
 
 
+app.use('/api/auth', require('./routes/auth'));
+
+
 
 
 
@@ -1138,12 +1141,53 @@ app.post('/api/chat', async (req, res) => {
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
     const llmReply = sanitiseOutput(guardResult.reply, isArabic);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
     sessionStore.addToHistory(session, 'user', message);
     sessionStore.addToHistory(session, 'assistant', llmReply);
     await sessionStore.saveSession(sid, session);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
     res.json({
@@ -1184,6 +1228,19 @@ app.post('/api/chat', async (req, res) => {
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
   } catch (err) {
     // AUDIT NOTE (this round): err.message alone wasn't enough to tell a
     // 429 rate-limit apart from a timeout or a genuine 5xx — all three
@@ -1221,9 +1278,35 @@ app.post('/api/chat', async (req, res) => {
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
 // ─────────────────────────────────────────
 // START
 // ─────────────────────────────────────────
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 const PORT = process.env.PORT || 3000;
@@ -1243,4 +1326,20 @@ app.listen(PORT, () => {
 });
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 module.exports = app;
+
+

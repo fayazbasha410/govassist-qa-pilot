@@ -1,13 +1,19 @@
 name: PR Checks (feature → develop)
 
 
+
+
 on:
   pull_request:
     branches: [ develop ]
 
 
+
+
 env:
   GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+
+
 
 
 jobs:
@@ -18,8 +24,12 @@ jobs:
     timeout-minutes: 5
 
 
+
+
     steps:
       - uses: actions/checkout@v4
+
+
 
 
       - uses: actions/setup-node@v4
@@ -28,11 +38,17 @@ jobs:
           cache: 'npm'
 
 
+
+
       - run: npm ci
+
+
 
 
       - name: Run Vitest unit suite
         run: npm run test:unit
+
+
 
 
   # ── Job 2: Schema validation (no server needed, free) ──
@@ -42,8 +58,12 @@ jobs:
     timeout-minutes: 5
 
 
+
+
     steps:
       - uses: actions/checkout@v4
+
+
 
 
       - uses: actions/setup-node@v4
@@ -52,7 +72,11 @@ jobs:
           cache: 'npm'
 
 
+
+
       - run: npm ci
+
+
 
 
       - name: Validate policy data
@@ -71,6 +95,8 @@ jobs:
           "
 
 
+
+
       - name: Validate test data
         run: |
           node -e "
@@ -81,6 +107,8 @@ jobs:
           }
           console.log('Test data valid ✅');
           "
+
+
 
 
   # ── Job 3: Boot smoke — does the app even start? ZERO Groq cost. ──
@@ -97,8 +125,12 @@ jobs:
     needs: schema-validation
 
 
+
+
     steps:
       - uses: actions/checkout@v4
+
+
 
 
       - uses: actions/setup-node@v4
@@ -107,7 +139,11 @@ jobs:
           cache: 'npm'
 
 
+
+
       - run: npm ci
+
+
 
 
       - name: Start server
@@ -121,6 +157,8 @@ jobs:
           done
 
 
+
+
       - name: Verify /api/health responds correctly
         run: |
           curl -sf http://localhost:3000/api/health -o /tmp/health_response.json
@@ -132,6 +170,8 @@ jobs:
           "
 
 
+
+
       - name: Verify /api/policies/search responds correctly (no Groq call)
         run: |
           curl -sf "http://localhost:3000/api/policies/search?q=emirates+id" -o /tmp/search_response.json
@@ -141,3 +181,28 @@ jobs:
           if (data.results.length === 0) { console.error('Search returned zero results for a known-good query'); process.exit(1); }
           console.log('Policy search OK ✅ (' + data.results.length + ' results)');
           "
+
+
+      - name: Verify auth endpoints fail open (no Supabase secrets in this job, by design)
+        # AUDIT NOTE: this job deliberately has zero Supabase config — same
+        # "zero external credentials" philosophy already applied to Groq
+        # here. This confirms the server boots and the auth routes degrade
+        # gracefully (503, not a crash) rather than assuming it — this is
+        # the exact scenario that broke Boot Smoke once already this
+        # project (server.js crashing at startup when Supabase env vars
+        # were missing, before that was fixed).
+        run: |
+          STATUS=$(curl -s -o /tmp/auth_response.json -w "%{http_code}" -X POST http://localhost:3000/api/auth/register \
+            -H "Content-Type: application/json" \
+            -d '{"name":"Boot Smoke Test","email":"bootsmoke@test.invalid","password":"irrelevant"}')
+          cat /tmp/auth_response.json
+          node -e "
+          const data = JSON.parse(require('fs').readFileSync('/tmp/auth_response.json', 'utf8'));
+          if ('$STATUS' !== '503') { console.error('Expected 503 (Supabase unconfigured), got $STATUS'); process.exit(1); }
+          if (data.success !== false) { console.error('Expected success: false in the fail-open response'); process.exit(1); }
+          console.log('Auth fail-open behavior confirmed ✅ (503, graceful, no crash)');
+          "
+
+
+
+

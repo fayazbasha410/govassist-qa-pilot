@@ -6,7 +6,26 @@
 
 
 
+
+
+
+
 const BASE_URL = process.env.BASE_URL || 'http://localhost:3000';
+
+
+// Matches scripts/seed-test-user.js's env var names exactly — same test
+// account, same source of truth, not a second set of hardcoded values
+// that could silently drift out of sync with each other.
+const TEST_USER = {
+  name:     process.env.TEST_USER_NAME     || 'Test User',
+  email:    process.env.TEST_USER_EMAIL    || 'test@govmurshid.ae',
+  password: process.env.TEST_USER_PASSWORD || 'TestPass123!',
+  emirate:  process.env.TEST_USER_EMIRATE  || 'Dubai',
+};
+
+
+
+
 
 
 
@@ -34,11 +53,19 @@ class GovAssistApiClient {
 
 
 
+
+
+
+
   // ── Health ──────────────────────────────────────────────────────────────────
   async getHealth() {
     const res = await this.request.get(`${this.baseUrl}/api/health`);
     return { status: res.status(), body: await res.json() };
   }
+
+
+
+
 
 
 
@@ -54,6 +81,10 @@ class GovAssistApiClient {
 
 
 
+
+
+
+
   async searchPoliciesRaw(queryString = '') {
     const url = queryString
       ? `${this.baseUrl}/api/policies/search?${queryString}`
@@ -65,6 +96,10 @@ class GovAssistApiClient {
 
 
 
+
+
+
+
   // ── Fines ───────────────────────────────────────────────────────────────────
   async getFines(plateNumber) {
     const res = await this.request.get(
@@ -72,6 +107,10 @@ class GovAssistApiClient {
     );
     return { status: res.status(), body: await res.json() };
   }
+
+
+
+
 
 
 
@@ -88,6 +127,10 @@ class GovAssistApiClient {
 
 
 
+
+
+
+
   async bookAppointmentRaw(payload) {
     const res = await this.request.post(
       `${this.baseUrl}/api/tools/appointment`,
@@ -95,6 +138,10 @@ class GovAssistApiClient {
     );
     return { status: res.status(), body: await res.json() };
   }
+
+
+
+
 
 
 
@@ -114,6 +161,10 @@ class GovAssistApiClient {
 
 
 
+
+
+
+
   // NOTE: intentionally does NOT apply defaultSessionId — this method exists
   // for tests that need full, unmodified control over the payload (e.g.
   // malformed-input / validation tests). Use sendChat() for anything that
@@ -125,6 +176,10 @@ class GovAssistApiClient {
     );
     return { status: res.status(), body: await res.json() };
   }
+
+
+
+
 
 
 
@@ -149,6 +204,10 @@ class GovAssistApiClient {
 
 
 
+
+
+
+
   // ── Multi-turn conversation helper ───────────────────────────────────────────
   // Sends multiple messages in sequence with the same sessionId
   // Returns array of responses
@@ -160,9 +219,49 @@ class GovAssistApiClient {
     }
     return responses;
   }
+
+
+  // ── Auth ─────────────────────────────────────────────────────────────────────
+  async register(payload) {
+    const res = await this.request.post(`${this.baseUrl}/api/auth/register`, { data: payload });
+    return { status: res.status(), body: await res.json().catch(() => ({})) };
+  }
+
+
+  async login(payload) {
+    const res = await this.request.post(`${this.baseUrl}/api/auth/login`, { data: payload });
+    return { status: res.status(), body: await res.json().catch(() => ({})) };
+  }
+
+
+  async loginAsTestUser() {
+    return this.login({ email: TEST_USER.email, password: TEST_USER.password });
+  }
+
+
+  async logout(token) {
+    const headers = token ? { Authorization: `Bearer ${token}` } : {};
+    const res = await this.request.post(`${this.baseUrl}/api/auth/logout`, { headers });
+    return { status: res.status(), body: await res.json().catch(() => ({})) };
+  }
+
+
+  // Generates a throwaway, guaranteed-unique email for tests that create
+  // real accounts — avoids EMAIL_EXISTS collisions across repeated runs
+  // and parallel workers. Uses the .invalid TLD (RFC 2606) so these never
+  // resolve as real addresses even if something tried to email them.
+  uniqueEmail(prefix = 'test') {
+    return `${prefix}.${Date.now()}.${Math.random().toString(36).slice(2)}@govmurshid-test.invalid`;
+  }
 }
 
 
 
 
-module.exports = { GovAssistApiClient };
+
+
+
+
+module.exports = { GovAssistApiClient, TEST_USER };
+
+
