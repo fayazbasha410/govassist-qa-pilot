@@ -3,6 +3,10 @@ name: QA Checks (develop → qa)
 
 
 
+
+
+
+
 on:
   pull_request:
     branches: [ qa ]
@@ -10,8 +14,18 @@ on:
 
 
 
+
+
+
+
 env:
   GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+  SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+  SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+
+
+
+
 
 
 
@@ -26,8 +40,16 @@ jobs:
 
 
 
+
+
+
+
     steps:
       - uses: actions/checkout@v4
+
+
+
+
 
 
 
@@ -40,13 +62,25 @@ jobs:
 
 
 
+
+
+
+
       - run: npm ci
+
+
+
+
 
 
 
 
       - name: Run Vitest unit suite
         run: npm run test:unit
+
+
+
+
 
 
 
@@ -60,8 +94,16 @@ jobs:
 
 
 
+
+
+
+
     steps:
       - uses: actions/checkout@v4
+
+
+
+
 
 
 
@@ -74,7 +116,15 @@ jobs:
 
 
 
+
+
+
+
       - run: npm ci
+
+
+
+
 
 
 
@@ -97,6 +147,10 @@ jobs:
 
 
 
+
+
+
+
       - name: Validate test data
         run: |
           node -e "
@@ -107,6 +161,10 @@ jobs:
           }
           console.log('Test data valid ✅');
           "
+
+
+
+
 
 
 
@@ -124,8 +182,16 @@ jobs:
 
 
 
+
+
+
+
     steps:
       - uses: actions/checkout@v4
+
+
+
+
 
 
 
@@ -138,12 +204,24 @@ jobs:
 
 
 
+
+
+
+
       - run: npm ci
 
 
 
 
+
+
+
+
       - run: npx playwright install --with-deps chromium
+
+
+
+
 
 
 
@@ -161,8 +239,16 @@ jobs:
 
 
 
+
+
+
+
       - name: Run smoke suite
-        run: npx playwright test tests/specs/api/health.spec.js tests/specs/api/fines.spec.js tests/specs/api/appointments.spec.js tests/specs/ui/
+        run: npx playwright test tests/specs/api/health.spec.js tests/specs/api/fines.spec.js tests/specs/api/appointments.spec.js tests/specs/api/auth.spec.js tests/specs/ui/
+
+
+
+
 
 
 
@@ -174,6 +260,10 @@ jobs:
           name: qa-smoke-report
           path: playwright-report/
           retention-days: 3
+
+
+
+
 
 
 
@@ -191,8 +281,16 @@ jobs:
 
 
 
+
+
+
+
     steps:
       - uses: actions/checkout@v4
+
+
+
+
 
 
 
@@ -205,7 +303,15 @@ jobs:
 
 
 
+
+
+
+
       - run: npm ci
+
+
+
+
 
 
 
@@ -217,6 +323,10 @@ jobs:
             curl -sf http://localhost:3000/api/health && break
             sleep 3
           done
+
+
+
+
 
 
 
