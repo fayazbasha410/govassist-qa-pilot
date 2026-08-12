@@ -3,9 +3,17 @@ name: Full Test Suite (Develop)
 
 
 
+
+
+
+
 on:
   pull_request:
     branches: [ staging ]
+
+
+
+
 
 
 
@@ -14,6 +22,10 @@ env:
   GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
   SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
   SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+
+
+
+
 
 
 
@@ -27,16 +39,28 @@ jobs:
 
 
 
+
+
+
+
     steps:
       - uses: actions/checkout@v4
 
 
 
 
+
+
+
+
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           cache: 'npm'
+
+
+
+
 
 
 
@@ -46,7 +70,15 @@ jobs:
 
 
 
+
+
+
+
       - run: npx playwright install --with-deps chromium
+
+
+
+
 
 
 
@@ -67,6 +99,10 @@ jobs:
 
 
 
+
+
+
+
       - name: Start server
         run: |
           npm start &
@@ -80,8 +116,16 @@ jobs:
 
 
 
+
+
+
+
       - name: Run full Playwright suite
         run: npx playwright test
+
+
+
+
 
 
 
@@ -97,11 +141,19 @@ jobs:
 
 
 
+
+
+
+
   regression-gate:
     name: RAG Regression Gate
     runs-on: ubuntu-latest
     timeout-minutes: 35
     needs: full-playwright
+
+
+
+
 
 
 
@@ -112,10 +164,18 @@ jobs:
 
 
 
+
+
+
+
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           cache: 'npm'
+
+
+
+
 
 
 
@@ -125,7 +185,15 @@ jobs:
 
 
 
+
+
+
+
       - run: npm install -g promptfoo
+
+
+
+
 
 
 
@@ -146,6 +214,10 @@ jobs:
 
 
 
+
+
+
+
       - name: Start server
         run: |
           npm start &
@@ -159,8 +231,16 @@ jobs:
 
 
 
+
+
+
+
       - name: Run regression gate
         run: npm run eval:regression
+
+
+
+
 
 
 
@@ -174,21 +254,37 @@ jobs:
 
 
 
+
+
+
+
     steps:
       - uses: actions/checkout@v4
 
 
 
 
+
+
+
+
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           cache: 'npm'
 
 
 
 
+
+
+
+
       - run: npm ci
+
+
+
+
 
 
 
@@ -209,6 +305,10 @@ jobs:
 
 
 
+
+
+
+
       - name: Start server
         run: |
           npm start &
@@ -218,6 +318,10 @@ jobs:
             echo "Attempt $i, retrying in 3s..."
             sleep 3
           done
+
+
+
+
 
 
 
