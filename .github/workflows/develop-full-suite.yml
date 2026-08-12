@@ -1,13 +1,21 @@
 name: Full Test Suite (Develop)
 
 
+
+
 on:
   pull_request:
     branches: [ staging ]
 
 
+
+
 env:
   GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+  SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+  SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+
+
 
 
 jobs:
@@ -17,8 +25,12 @@ jobs:
     timeout-minutes: 50
 
 
+
+
     steps:
       - uses: actions/checkout@v4
+
+
 
 
       - uses: actions/setup-node@v4
@@ -27,10 +39,16 @@ jobs:
           cache: 'npm'
 
 
+
+
       - run: npm ci
 
 
+
+
       - run: npx playwright install --with-deps chromium
+
+
 
 
       - name: Install Ollama and pull model
@@ -47,6 +65,8 @@ jobs:
           echo "Model ready!"
 
 
+
+
       - name: Start server
         run: |
           npm start &
@@ -58,8 +78,12 @@ jobs:
           done
 
 
+
+
       - name: Run full Playwright suite
         run: npx playwright test
+
+
 
 
       - name: Upload report
@@ -71,6 +95,8 @@ jobs:
           retention-days: 14
 
 
+
+
   regression-gate:
     name: RAG Regression Gate
     runs-on: ubuntu-latest
@@ -78,8 +104,12 @@ jobs:
     needs: full-playwright
 
 
+
+
     steps:
       - uses: actions/checkout@v4
+
+
 
 
       - uses: actions/setup-node@v4
@@ -88,10 +118,16 @@ jobs:
           cache: 'npm'
 
 
+
+
       - run: npm ci
 
 
+
+
       - run: npm install -g promptfoo
+
+
 
 
       - name: Install Ollama and pull model
@@ -108,6 +144,8 @@ jobs:
           echo "Model ready!"
 
 
+
+
       - name: Start server
         run: |
           npm start &
@@ -119,8 +157,12 @@ jobs:
           done
 
 
+
+
       - name: Run regression gate
         run: npm run eval:regression
+
+
 
 
   red-team:
@@ -130,8 +172,12 @@ jobs:
     needs: full-playwright
 
 
+
+
     steps:
       - uses: actions/checkout@v4
+
+
 
 
       - uses: actions/setup-node@v4
@@ -140,7 +186,11 @@ jobs:
           cache: 'npm'
 
 
+
+
       - run: npm ci
+
+
 
 
       - name: Install Ollama and pull model
@@ -157,6 +207,8 @@ jobs:
           echo "Model ready!"
 
 
+
+
       - name: Start server
         run: |
           npm start &
@@ -166,6 +218,8 @@ jobs:
             echo "Attempt $i, retrying in 3s..."
             sleep 3
           done
+
+
 
 
       - name: Run red team
