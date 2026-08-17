@@ -26,11 +26,17 @@
  */
 
 
+
+
 require('dotenv').config();
 
 
+
+
 const GROQ_API_KEY = process.env.GROQ_API_KEY;
-const MODEL = 'llama-3.1-8b-instant';
+const MODEL = 'openai/gpt-oss-20b';
+
+
 
 
 // Rough Groq-call costs of each expensive script, so this can give an
@@ -45,10 +51,14 @@ const KNOWN_COSTS = [
 ];
 
 
+
+
 function fail(msg) {
   console.error(`\n❌ ${msg}\n`);
   process.exit(1);
 }
+
+
 
 
 async function checkQuota() {
@@ -57,9 +67,13 @@ async function checkQuota() {
   }
 
 
+
+
   console.log('🔍 GovMurshid — Groq Quota Pre-Flight Check');
   console.log('════════════════════════════════════════════\n');
   console.log('Making one minimal call to read live rate-limit headers...\n');
+
+
 
 
   let res;
@@ -81,6 +95,8 @@ async function checkQuota() {
   }
 
 
+
+
   if (res.status === 429) {
     console.log('🚨 Quota is ALREADY exhausted — this probe call itself was rate-limited.');
     console.log('   Wait for the current per-minute window to refill (seconds, not a day) before retrying.\n');
@@ -90,13 +106,19 @@ async function checkQuota() {
   }
 
 
+
+
   if (!res.ok && res.status !== 200) {
     const body = await res.text().catch(() => '');
     fail(`Groq returned ${res.status} on the probe call. Body: ${body.slice(0, 200)}`);
   }
 
 
+
+
   const h = (name) => res.headers.get(name);
+
+
 
 
   const limitRequests     = h('x-ratelimit-limit-requests');
@@ -105,6 +127,8 @@ async function checkQuota() {
   const limitTokens       = h('x-ratelimit-limit-tokens');
   const remainingTokens   = h('x-ratelimit-remaining-tokens');
   const resetTokens       = h('x-ratelimit-reset-tokens');
+
+
 
 
   console.log('📊 Current rate-limit window (from live Groq response headers):\n');
@@ -119,8 +143,12 @@ async function checkQuota() {
   console.log('      concurrent run is guaranteed to avoid every 429.');
 
 
+
+
   const remReq = Number(remainingRequests);
   const remTok = Number(remainingTokens);
+
+
 
 
   console.log('\n📋 Do the expensive scripts fit in the CURRENT window? (see burst caveat above)\n');
@@ -135,10 +163,14 @@ async function checkQuota() {
   }
 
 
+
+
   console.log('\n💡 Recommended order if you\'re seeing repeated 429s:');
   console.log('   1. npm run eval          (highest priority — the #1 unconfirmed number)');
   console.log('   2. npm run eval:bias     (needed for the first real bias scores)');
   console.log('   3. Everything else can wait a few minutes for the window to refill.\n');
+
+
 
 
   console.log('Zero-quota alternatives for iteration in the meantime:');
@@ -148,7 +180,11 @@ async function checkQuota() {
 }
 
 
+
+
 checkQuota().catch(err => {
   console.error('❌ Unexpected error:', err);
   process.exit(2);
 });
+
+
