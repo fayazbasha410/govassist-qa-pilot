@@ -4,6 +4,10 @@ description: GovMurshid UAE Government Services RAG Eval — English + Arabic
 
 
 
+
+
+
+
 providers:
   - id: http
     config:
@@ -20,13 +24,25 @@ providers:
 
 
 
+
+
+
+
 prompts:
   - "{{input}}"
 
 
 
 
+
+
+
+
 tests:
+
+
+
+
 
 
 
@@ -41,6 +57,10 @@ tests:
         value: "AED 100"
       - type: not-contains
         value: "no penalty"
+
+
+
+
 
 
 
@@ -60,6 +80,10 @@ tests:
 
 
 
+
+
+
+
   - description: "GD-003 Golden Visa eligibility"
     vars:
       input: "Who can apply for the UAE Golden Visa and how long is it valid?"
@@ -69,6 +93,10 @@ tests:
         value: ["Investors", "Entrepreneurs"]
       - type: not-contains
         value: "I don't know"
+
+
+
+
 
 
 
@@ -87,6 +115,10 @@ tests:
 
 
 
+
+
+
+
   - description: "GD-005 Tawtheeq registration Abu Dhabi"
     vars:
       input: "How do I register my rental contract in Abu Dhabi?"
@@ -96,6 +128,10 @@ tests:
         value: ["Tawtheeq", "TAMM"]
       - type: not-contains
         value: "I don't know"
+
+
+
+
 
 
 
@@ -110,6 +146,10 @@ tests:
         value: "mandatory"
       - type: not-contains
         value: "optional"
+
+
+
+
 
 
 
@@ -129,6 +169,10 @@ tests:
 
 
 
+
+
+
+
   # ── EDUCATION ──────────────────────────────────────────
   - description: "GD-008 School enrollment Dubai KHDA"
     vars:
@@ -143,6 +187,10 @@ tests:
 
 
 
+
+
+
+
   - description: "GD-009 Abu Dhabi school regulator"
     vars:
       input: "Which authority regulates private schools in Abu Dhabi?"
@@ -152,6 +200,10 @@ tests:
         value: "ADEK"
       - type: not-contains
         value: "KHDA"
+
+
+
+
 
 
 
@@ -170,6 +222,10 @@ tests:
 
 
 
+
+
+
+
   - description: "GD-011 VAT registration threshold"
     vars:
       input: "When must a UAE business register for VAT and what is the threshold?"
@@ -179,6 +235,10 @@ tests:
         value: "375,000"
       - type: not-contains
         value: "no VAT"
+
+
+
+
 
 
 
@@ -197,6 +257,10 @@ tests:
 
 
 
+
+
+
+
   # ── STEP 3 ADDITIONS (v3.10.0) ─────────────────────────
   - description: "GD-013 MOI lost Emirates ID replacement"
     vars:
@@ -211,6 +275,10 @@ tests:
 
 
 
+
+
+
+
   - description: "GD-014 MOHRE labour complaint for unpaid salary"
     vars:
       input: "How do I file a complaint for unpaid salary?"
@@ -220,6 +288,10 @@ tests:
         value: "80060"
       - type: not-contains
         value: "I don't know"
+
+
+
+
 
 
 
@@ -239,6 +311,10 @@ tests:
 
 
 
+
+
+
+
   - description: "GD-016 Widows financial support"
     vars:
       input: "What financial support is available for widows in the UAE?"
@@ -250,6 +326,10 @@ tests:
         value: "The response gives a clear, sympathetic, and specific explanation of financial support available to widows, not just a vague deflection"
       - type: not-contains
         value: "I don't know"
+
+
+
+
 
 
 
@@ -267,6 +347,10 @@ tests:
 
 
 
+
+
+
+
   - description: "GD-018 Medical fitness for employment"
     vars:
       input: "Do I need a medical test for a new job in the UAE?"
@@ -280,6 +364,10 @@ tests:
 
 
 
+
+
+
+
   - description: "GD-019 Death certificate registration"
     vars:
       input: "How do I register a death certificate in the UAE?"
@@ -289,6 +377,10 @@ tests:
         value: ["48 hours", "attest"]
       - type: not-contains
         value: "I don't know"
+
+
+
+
 
 
 
@@ -308,6 +400,10 @@ tests:
 
 
 
+
+
+
+
   - description: "GD-021 Divorce certificate attestation"
     vars:
       input: "How do I get a divorce certificate attested in the UAE?"
@@ -317,6 +413,10 @@ tests:
         value: ["Personal Status Courts", "Ministry of Foreign Affairs", "attest"]
       - type: not-contains
         value: "I don't know"
+
+
+
+
 
 
 
@@ -334,6 +434,10 @@ tests:
 
 
 
+
+
+
+
   - description: "GD-023 Dubai rent dispute RDSC"
     vars:
       input: "How do I dispute a rent increase in Dubai?"
@@ -343,6 +447,10 @@ tests:
         value: ["Rental Dispute Settlement Centre", "RDSC", "Ejari"]
       - type: not-contains
         value: "I don't know"
+
+
+
+
 
 
 
@@ -374,6 +482,10 @@ tests:
 
 
 
+
+
+
+
   - description: "GD-025 Arabic — health insurance Dubai"
     vars:
       input: "هل التأمين الصحي إلزامي في دبي؟"
@@ -385,6 +497,10 @@ tests:
         value: "إلزامي"
       - type: not-contains
         value: "I don't know"
+
+
+
+
 
 
 
@@ -404,6 +520,10 @@ tests:
 
 
 
+
+
+
+
   - description: "GD-027 Arabic — Golden Visa"
     vars:
       input: "من يحق له التقدم للحصول على الإقامة الذهبية في الإمارات؟"
@@ -415,6 +535,10 @@ tests:
         value: ["مستثمر", "10 سنوات"]
       - type: not-contains
         value: "I don't know"
+
+
+
+
 
 
 
@@ -434,10 +558,16 @@ tests:
 
 
 
+
+
+
+
 # Scoring — use Groq as judge (replaces Ollama)
 defaultTest:
   options:
     provider:
-      id: groq:llama-3.1-8b-instant
+      id: groq:openai/gpt-oss-20b
       config:
         apiKey: "{{env.GROQ_API_KEY}}"
+
+
