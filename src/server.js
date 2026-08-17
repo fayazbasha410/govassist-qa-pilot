@@ -20,6 +20,22 @@ const { checkFineStatus, bookAppointment } = require('./tools/agentTools');
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 const { detectTopicGroup, detectEmirate, detectArabic } = require('./lib/textDetection');
 const { retrieveRelevantDocs, computeConfidence } = require('./lib/ragEngine');
 const { isFollowUp, enrichFollowUp } = require('./lib/followUp');
@@ -44,13 +60,47 @@ const { translateArabicQuery } = require('./lib/arabicTranslation');
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 const app = express();
 app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, '../public')));
 
 
+
+
 app.use('/api/auth', require('./routes/auth'));
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -88,8 +138,40 @@ app.use('/api/auth', require('./routes/auth'));
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 const sessionStore = createSessionStore();
 sessionStore.startCleanupInterval();
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -125,8 +207,40 @@ sessionStore.startCleanupInterval();
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 const Groq = require('groq-sdk');
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -173,6 +287,14 @@ function parseRetryAfterMs(err) {
 
 
 
+
+
+
+
+
+
+
+
 function computeBackoffMs(err, attempt) {
   const suggestedMs = parseRetryAfterMs(err);
   // Capped at 30s, not the full suggested wait, deliberately: several
@@ -202,11 +324,27 @@ function computeBackoffMs(err, attempt) {
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 async function callOllama(systemPrompt, userMessage, retries = 2) {
   for (let attempt = 1; attempt <= retries; attempt++) {
     try {
       const completion = await groq.chat.completions.create({
-        model: 'llama-3.1-8b-instant',
+        model: 'openai/gpt-oss-20b',
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userMessage }
@@ -244,9 +382,41 @@ async function callOllama(systemPrompt, userMessage, retries = 2) {
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 // ─────────────────────────────────────────
 // GROQ NATIVE TOOL CALLING
 // ─────────────────────────────────────────
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -299,11 +469,27 @@ const TOOL_DEFINITIONS = [
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 async function detectToolIntentWithLLM(message, retries = 2) {
   for (let attempt = 1; attempt <= retries; attempt++) {
     try {
       const completion = await groq.chat.completions.create({
-        model: 'llama-3.1-8b-instant',
+        model: 'openai/gpt-oss-20b',
         messages: [
           { role: 'system', content: 'UAE government services assistant. Use bookAppointment ONLY when the user explicitly asks to book or schedule an appointment. For all general information questions, do NOT call any tool.' },
           { role: 'user', content: message }
@@ -347,9 +533,41 @@ async function detectToolIntentWithLLM(message, retries = 2) {
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 // ─────────────────────────────────────────
 // SYSTEM PROMPT
 // ─────────────────────────────────────────
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -390,9 +608,41 @@ If the answer is not in the context, say so clearly and suggest the user visit t
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 // ─────────────────────────────────────────
 // ROUTES
 // ─────────────────────────────────────────
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -426,11 +676,27 @@ app.get('/favicon.ico', (req, res) => res.status(204).end());
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 app.get('/api/health', (req, res) => {
   res.json({
     status: 'ok',
     version: '3.12.0',
-    model: 'groq/llama-3.1-8b-instant',
+    model: 'openai/gpt-oss-20b',
     name: 'GovMurshid',
     toolCalling: 'native',
     memory: 'multi-turn',
@@ -441,6 +707,22 @@ app.get('/api/health', (req, res) => {
     outputGuardrails: true,
   });
 });
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -479,11 +761,43 @@ app.get('/api/policies/search', (req, res) => {
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 // checkFineStatus is a stub — see agentTools.js. This route stays so old
 // links / integrations get a helpful redirect to Tawfeer instead of a 404.
 app.get('/api/tools/fines/:plateNumber', (req, res) => {
   res.json(checkFineStatus(req.params.plateNumber));
 });
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -521,10 +835,42 @@ app.post('/api/tools/appointment', (req, res) => {
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 app.delete('/api/session/:sessionId', async (req, res) => {
   await sessionStore.deleteSession(req.params.sessionId);
   res.json({ cleared: true });
 });
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -560,8 +906,40 @@ app.delete('/api/session/:sessionId', async (req, res) => {
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 app.post('/api/chat', async (req, res) => {
   const { message, sessionId } = req.body;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -581,6 +959,22 @@ app.post('/api/chat', async (req, res) => {
   if (!message || typeof message !== 'string') {
     return res.status(400).json({ error: 'Missing or invalid message' });
   }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -626,8 +1020,40 @@ app.post('/api/chat', async (req, res) => {
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
   // ── 2. Language detection ──────────────────────────────────────────
   const isArabic = detectArabic(message);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -647,6 +1073,22 @@ app.post('/api/chat', async (req, res) => {
   // ── 3. Session + memory ────────────────────────────────────────────
   const sid = sessionId || 'default';
   const session = await sessionStore.getSession(sid);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -690,6 +1132,22 @@ app.post('/api/chat', async (req, res) => {
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
   const incomingTopic   = detectTopicGroup(message);
   const incomingEmirate = detectEmirate(message);
   // AUDIT NOTE (this round): confirmed via a real CI failure that this was
@@ -716,9 +1174,41 @@ app.post('/api/chat', async (req, res) => {
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
   if (incomingTopic)   session.currentTopic   = incomingTopic;
   if (incomingEmirate) session.currentEmirate = incomingEmirate;
   session.topicChanged = topicChanged;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -756,10 +1246,42 @@ app.post('/api/chat', async (req, res) => {
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
   // ── 4. Follow-up enrichment ────────────────────────────────────────
   const followUp = isFollowUp(message) && (priorTopic || priorEmirate);
   let retrievalMessage = message;
   if (followUp) retrievalMessage = enrichFollowUp(message, session);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -803,7 +1325,39 @@ app.post('/api/chat', async (req, res) => {
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
   const toolIntent = mightNeedTool ? await detectToolIntentWithLLM(message) : null;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -851,7 +1405,39 @@ app.post('/api/chat', async (req, res) => {
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     const toolResult = bookAppointment(toolIntent.params.service, toolIntent.params.date);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -890,9 +1476,41 @@ app.post('/api/chat', async (req, res) => {
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     sessionStore.addToHistory(session, 'user', message);
     sessionStore.addToHistory(session, 'assistant', toolReply);
     await sessionStore.saveSession(sid, session);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -954,10 +1572,42 @@ app.post('/api/chat', async (req, res) => {
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
   // ── 6. RAG retrieval ──────────────────────────────────────────────
   const retrievalQuery = isArabic ? translateArabicQuery(retrievalMessage) : retrievalMessage;
   const topK = followUp ? 2 : 5;
   const docs = retrieveRelevantDocs(retrievalQuery, policies, topK);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -1012,6 +1662,22 @@ app.post('/api/chat', async (req, res) => {
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
   // ── 7. Confidence scoring ─────────────────────────────────────────
   const confidence = computeConfidence(docs, retrievalQuery);
 
@@ -1030,8 +1696,40 @@ app.post('/api/chat', async (req, res) => {
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
   // ── 8. Build prompt ───────────────────────────────────────────────
   const context = docs.map(d => `[${d.id}] ${d.title} (${d.emirate || 'UAE'}):\n${d.content}`).join('\n\n');
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -1067,9 +1765,41 @@ app.post('/api/chat', async (req, res) => {
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
   const topicFocusInstruction = followUp && session.currentTopic
     ? `\nThe user is asking a follow-up about ${session.currentTopic}${session.currentEmirate ? ` in ${session.currentEmirate}` : ''}. Answer ONLY about ${session.currentTopic} — do not introduce other topics.`
     : '';
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -1108,7 +1838,39 @@ app.post('/api/chat', async (req, res) => {
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
   const systemPrompt = `${ACTIVE_SYSTEM_PROMPT}${languageInstruction}${topicFocusInstruction}${historyContext}\n\nPOLICY CONTEXT:\n${context}`;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -1154,7 +1916,39 @@ app.post('/api/chat', async (req, res) => {
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     const llmReply = sanitiseOutput(guardResult.reply, isArabic);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -1174,6 +1968,22 @@ app.post('/api/chat', async (req, res) => {
     sessionStore.addToHistory(session, 'user', message);
     sessionStore.addToHistory(session, 'assistant', llmReply);
     await sessionStore.saveSession(sid, session);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -1212,7 +2022,7 @@ app.post('/api/chat', async (req, res) => {
           },
           {
             type: 'llm',
-            model: 'llama-3.1-8b-instant',
+            model: 'openai/gpt-oss-20b',
             reaskCount: guardResult.reaskCount,
             grounded: guardResult.grounded,
           },
@@ -1225,6 +2035,22 @@ app.post('/api/chat', async (req, res) => {
       topicChanged,
       confidence,
     });
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -1290,6 +2116,22 @@ app.post('/api/chat', async (req, res) => {
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 // ─────────────────────────────────────────
 // START
 // ─────────────────────────────────────────
@@ -1309,10 +2151,26 @@ app.post('/api/chat', async (req, res) => {
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`GovMurshid v3.12.0 running at http://localhost:${PORT}`);
-  console.log(`LLM: Groq API (llama-3.1-8b-instant)`);
+  console.log(`LLM: Groq API (openai/gpt-oss-20b)`);
   console.log(`Tool calling: Groq native function calling ✅`);
   console.log(`Multi-turn memory: session-based (${sessionStore.maxTurns} turns, ${sessionStore.ttlMs / 60000}min TTL) ✅`);
   console.log(`Emirate boost scoring: enabled ✅`);
@@ -1324,6 +2182,22 @@ app.listen(PORT, () => {
   console.log(`Scope: All UAE government services EXCEPT transport (see Tawfeer) ✅`);
   console.log(`Core logic modularized under src/lib/ for unit testing ✅`);
 });
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

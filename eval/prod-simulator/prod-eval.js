@@ -11,6 +11,8 @@
  */
 
 
+
+
 require('dotenv').config();
 const { recordRun } = require('../observability/metrics-store');
 const fs   = require('fs');
@@ -18,9 +20,13 @@ const path = require('path');
 const Groq = require('groq-sdk');
 
 
+
+
 const BASE_URL     = process.env.BASE_URL || 'http://localhost:3000';
 const GROQ_API_KEY = process.env.GROQ_API_KEY;
 const groqClient   = new Groq({ apiKey: GROQ_API_KEY });
+
+
 
 
 const PROD_TRAFFIC_SAMPLE = [
@@ -88,6 +94,8 @@ const PROD_TRAFFIC_SAMPLE = [
   },
 
 
+
+
   // ── Arabic queries ───────────────────────────────────
   {
     // AUDIT NOTE (v3.12.0): same fix as PROD-001, Arabic side.
@@ -128,6 +136,8 @@ const PROD_TRAFFIC_SAMPLE = [
 ];
 
 
+
+
 // ── Helpers ───────────────────────────────────────────────
 async function sendChat(message) {
   const res = await fetch(`${BASE_URL}/api/chat`, {
@@ -139,17 +149,25 @@ async function sendChat(message) {
 }
 
 
+
+
 async function judgeResponse(query, response, expectedTopics, language) {
   const isArabic = language === 'ar';
+
+
 
 
   const prompt = isArabic
     ? `أنت مقيّم جودة لمساعد ذكاء اصطناعي لخدمات حكومة الإمارات.
 
 
+
+
 سؤال المستخدم: "${query}"
 رد الذكاء الاصطناعي: "${response}"
 المواضيع المتوقع تغطيتها: ${expectedTopics.join(', ')}
+
+
 
 
 قيّم ما إذا كان الرد:
@@ -159,14 +177,20 @@ async function judgeResponse(query, response, expectedTopics, language) {
 4. مهني ودقيق
 
 
+
+
 أجب فقط بكائن JSON هكذا:
 {"pass": true, "score": 0.9, "reason": "سبب مختصر"}`
     : `You are a quality evaluator for a UAE government services AI assistant.
 
 
+
+
 User query: "${query}"
 AI response: "${response}"
 Expected topics that should be covered: ${expectedTopics.join(', ')}
+
+
 
 
 Evaluate if the response:
@@ -176,18 +200,24 @@ Evaluate if the response:
 4. Does not contain harmful or incorrect information
 
 
+
+
 Reply with ONLY a JSON object like this:
 {"pass": true, "score": 0.9, "reason": "brief reason"}`;
+
+
 
 
   try {
     // Using Groq SDK instead of raw fetch to avoid response parsing issues
     const completion = await groqClient.chat.completions.create({
-      model: 'llama-3.1-8b-instant',
+      model: 'openai/gpt-oss-20b',
       messages: [{ role: 'user', content: prompt }],
       temperature: 0.1,
       max_tokens: 200
     });
+
+
 
 
     const text = completion.choices[0].message.content.trim();
@@ -200,6 +230,8 @@ Reply with ONLY a JSON object like this:
 }
 
 
+
+
 // ── Main ──────────────────────────────────────────────────
 async function runProdEval() {
   console.log('🔍 GovMurshid Production Eval Simulator');
@@ -207,8 +239,12 @@ async function runProdEval() {
   console.log(`Evaluating ${PROD_TRAFFIC_SAMPLE.length} sampled queries (English + Arabic)...\n`);
 
 
+
+
   const results  = [];
   const failures = [];
+
+
 
 
   for (const sample of PROD_TRAFFIC_SAMPLE) {
@@ -216,8 +252,12 @@ async function runProdEval() {
     process.stdout.write(`  ${langTag} [${sample.id}] ${sample.query.substring(0, 45)}... `);
 
 
+
+
     try {
       const chatResponse = await sendChat(sample.query);
+
+
 
 
       if (chatResponse.guardrail?.triggered) {
@@ -228,6 +268,8 @@ async function runProdEval() {
       }
 
 
+
+
       const judgment = await judgeResponse(
         sample.query,
         chatResponse.reply,
@@ -236,12 +278,16 @@ async function runProdEval() {
       );
 
 
+
+
       if (judgment.pass) {
         console.log(`✅ PASS (score: ${judgment.score?.toFixed(2) || 'N/A'})`);
       } else {
         console.log(`❌ FAIL — ${judgment.reason}`);
         failures.push({ ...sample, actualResponse: chatResponse.reply, reason: judgment.reason });
       }
+
+
 
 
       results.push({
@@ -253,11 +299,15 @@ async function runProdEval() {
       });
 
 
+
+
     } catch (err) {
       console.log(`💥 ERROR: ${err.message}`);
       results.push({ id: sample.id, pass: false, score: 0, category: sample.category, language: sample.language });
     }
   }
+
+
 
 
   // ── Summary ─────────────────────────────────────────────
@@ -266,10 +316,14 @@ async function runProdEval() {
   const passRate = passed / total;
 
 
+
+
   const enResults = results.filter(r => r.language === 'en');
   const arResults = results.filter(r => r.language === 'ar');
   const enPassed  = enResults.filter(r => r.pass).length;
   const arPassed  = arResults.filter(r => r.pass).length;
+
+
 
 
   console.log('\n════════════════════════════════════════');
@@ -277,6 +331,8 @@ async function runProdEval() {
   console.log(`Overall:  ${passed}/${total} (${(passRate * 100).toFixed(1)}%)`);
   console.log(`🇬🇧 English: ${enPassed}/${enResults.length}`);
   console.log(`🇦🇪 Arabic:  ${arPassed}/${arResults.length}`);
+
+
 
 
   // Category breakdown
@@ -288,6 +344,8 @@ async function runProdEval() {
   }
 
 
+
+
   console.log('\nBy category:');
   for (const [cat, scores] of Object.entries(categories)) {
     const icon = scores.pass === scores.total ? '✅' : '⚠️ ';
@@ -295,10 +353,14 @@ async function runProdEval() {
   }
 
 
+
+
   // Record in metrics store
   const run = { type: 'prod_eval', total, passed, passRate, categoryScores: categories };
   recordRun(run);
   console.log('\n📈 Results recorded in metrics store');
+
+
 
 
   // Feedback loop
@@ -308,6 +370,8 @@ async function runProdEval() {
     const existing = fs.existsSync(feedbackPath)
       ? JSON.parse(fs.readFileSync(feedbackPath, 'utf8'))
       : [];
+
+
 
 
     const newCandidates = failures.map(f => ({
@@ -323,6 +387,8 @@ async function runProdEval() {
     }));
 
 
+
+
     fs.writeFileSync(feedbackPath, JSON.stringify([...existing, ...newCandidates], null, 2));
     newCandidates.forEach(c => {
       console.log(`  → [${c.id}] "${c.input.substring(0, 50)}..."`);
@@ -335,8 +401,12 @@ async function runProdEval() {
   }
 
 
+
+
   return passRate;
 }
+
+
 
 
 runProdEval()
@@ -345,3 +415,5 @@ runProdEval()
     console.error('❌ Error:', err);
     process.exit(2);
   });
+
+
