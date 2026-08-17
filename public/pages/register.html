@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Create Account — GovMurshid</title>
+  <script src="/js/auth.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+
+
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #f0f4f8;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+
+
+
+    .uae-stripe { width: 100%; height: 6px; display: flex; }
+    .uae-stripe .red   { background: #EF3340; flex: 1; }
+    .uae-stripe .green { background: #009A44; flex: 2; }
+    .uae-stripe .white { background: #ffffff; flex: 2; border-bottom: 1px solid #ddd; }
+    .uae-stripe .black { background: #000000; flex: 2; }
+
+
+
+
+    header {
+      width: 100%;
+      background: #006241;
+      color: white;
+      padding: 14px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .header-left h1 { font-size: 1.25rem; font-weight: 600; }
+    .header-left p  { font-size: 0.78rem; opacity: 0.85; margin-top: 2px; }
+    .header-right   { display: flex; align-items: center; gap: 10px; }
+
+
+
+
+    #lang-toggle-btn {
+      background: transparent;
+      border: 1px solid rgba(255,255,255,0.5);
+      color: white;
+      border-radius: 8px;
+      padding: 6px 14px;
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    #lang-toggle-btn:hover { background: rgba(255,255,255,0.15); }
+
+
+
+
+    .pride-line {
+      width: 100%;
+      max-width: 420px;
+      text-align: center;
+      font-size: 0.82rem;
+      color: #006241;
+      font-weight: 600;
+      margin: 20px 0 4px;
+      unicode-bidi: plaintext;
+    }
+
+
+
+
+    #auth-container {
+      width: 100%;
+      max-width: 420px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      padding: 16px 16px 24px;
+      gap: 16px;
+    }
+
+
+
+
+    .auth-card {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      padding: 28px 24px;
+    }
+    .auth-card h2 {
+      font-size: 1.3rem;
+      color: #1a1a1a;
+      margin-bottom: 6px;
+    }
+    .auth-card .subtitle {
+      font-size: 0.85rem;
+      color: #666;
+      margin-bottom: 20px;
+    }
+
+
+
+
+    .field { margin-bottom: 14px; }
+    .field label {
+      display: block;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 5px;
+    }
+    .field input, .field select {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.2s;
+      background: white;
+    }
+    .field input:focus, .field select:focus { border-color: #006241; }
+    .field .hint { font-size: 0.72rem; color: #888; margin-top: 4px; }
+    .field .optional-tag {
+      font-weight: 400;
+      color: #999;
+      font-size: 0.75rem;
+    }
+
+
+
+
+    #submit-btn {
+      width: 100%;
+      background: #006241;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 12px;
+      cursor: pointer;
+      font-size: 0.95rem;
+      font-weight: 600;
+      transition: background 0.2s;
+      margin-top: 6px;
+    }
+    #submit-btn:hover    { background: #004d33; }
+    #submit-btn:disabled { background: #aaa; cursor: not-allowed; }
+
+
+
+
+    #error-msg {
+      background: #fee2e2;
+      color: #dc2626;
+      border-radius: 8px;
+      padding: 10px 12px;
+      font-size: 0.85rem;
+      margin-bottom: 14px;
+      display: none;
+    }
+    #error-msg.show { display: block; }
+
+
+
+
+    .auth-links {
+      text-align: center;
+      font-size: 0.85rem;
+      color: #555;
+      margin-top: 16px;
+    }
+    .auth-links a { color: #006241; font-weight: 600; text-decoration: none; }
+    .auth-links a:hover { text-decoration: underline; }
+
+
+
+
+    .guest-link {
+      text-align: center;
+      margin-top: 6px;
+    }
+    .guest-link a {
+      font-size: 0.8rem;
+      color: #888;
+      text-decoration: none;
+    }
+    .guest-link a:hover { color: #006241; }
+
+
+
+
+    footer {
+      width: 100%;
+      text-align: center;
+      padding: 14px 16px;
+      font-size: 0.75rem;
+      color: #555;
+      border-top: 1px solid #e0e0e0;
+      background: #f8f9fa;
+      line-height: 1.8;
+    }
+    footer strong { color: #006241; }
+    footer .proud { color: #c0001a; font-weight: 600; }
+
+
+
+
+    html[dir="rtl"] .field input,
+    html[dir="rtl"] .field select { text-align: right; }
+    html[dir="rtl"] .header-right { flex-direction: row-reverse; }
+  </style>
+</head>
+<body>
+
+
+
+
+  <div class="uae-stripe">
+    <div class="red"></div><div class="green"></div>
+    <div class="white"></div><div class="black"></div>
+  </div>
+
+
+
+
+  <header>
+    <div class="header-left">
+      <h1>🇦🇪 GovMurshid</h1>
+      <p data-i18n="tagline">Create your account</p>
+    </div>
+    <div class="header-right">
+      <button id="lang-toggle-btn" data-test-id="lang-toggle-btn" onclick="toggleLang()">عربي</button>
+    </div>
+  </header>
+
+
+
+
+  <div class="pride-line" data-i18n="prideLine">Proudly serving UAE residents across all 7 emirates</div>
+
+
+
+
+  <div id="auth-container">
+    <div class="auth-card">
+      <h2 data-i18n="createAccount">Create your account</h2>
+      <p class="subtitle" data-i18n="registerSubtitle">Save your conversation history across devices</p>
+
+
+
+
+      <div id="error-msg" data-test-id="register-error"></div>
+
+
+
+
+      <form id="register-form">
+        <div class="field">
+          <label data-i18n="nameLabel">Full name</label>
+          <input type="text" id="name" data-test-id="register-name" required autocomplete="name">
+        </div>
+        <div class="field">
+          <label data-i18n="emailLabel">Email address</label>
+          <input type="email" id="email" data-test-id="register-email" required autocomplete="email">
+        </div>
+        <div class="field">
+          <label data-i18n="passwordLabel">Password</label>
+          <input type="password" id="password" data-test-id="register-password" required autocomplete="new-password">
+          <div class="hint" data-i18n="passwordHint">At least 6 characters</div>
+        </div>
+        <div class="field">
+          <label data-i18n="confirmPasswordLabel">Confirm password</label>
+          <input type="password" id="confirm-password" data-test-id="register-confirm-password" required autocomplete="new-password">
+        </div>
+        <div class="field">
+          <label>
+            <span data-i18n="emirateLabel">Emirate</span>
+            <span class="optional-tag" data-i18n="optionalTag">(optional)</span>
+          </label>
+          <select id="emirate" data-test-id="register-emirate">
+            <option value="" data-i18n="emirateNone">Prefer not to say</option>
+            <option value="Abu Dhabi">Abu Dhabi</option>
+            <option value="Dubai">Dubai</option>
+            <option value="Sharjah">Sharjah</option>
+            <option value="Ajman">Ajman</option>
+            <option value="Umm Al Quwain">Umm Al Quwain</option>
+            <option value="Ras Al Khaimah">Ras Al Khaimah</option>
+            <option value="Fujairah">Fujairah</option>
+          </select>
+        </div>
+        <button type="submit" id="submit-btn" data-test-id="register-btn" data-i18n="createAccountBtn">Create Account</button>
+      </form>
+
+
+
+
+      <div class="auth-links">
+        <span data-i18n="hasAccount">Already have an account?</span>
+        <a href="/pages/login.html" data-i18n="signInLink">Sign in</a>
+      </div>
+      <div class="guest-link">
+        <a href="/" data-i18n="continueGuest">Continue without an account →</a>
+      </div>
+    </div>
+  </div>
+
+
+
+
+  <footer>
+    <div>Built by <strong>Fayaz Basha Shaik</strong> &nbsp;|&nbsp; <span class="proud">🇦🇪 Proud of UAE</span> &nbsp;|&nbsp; افخر بالامارات</div>
+    <div>&copy; 2026 GovMurshid — UAE Government Services AI. All rights reserved.</div>
+  </footer>
+
+
+
+
+  <script>
+    requireGuest();
+
+
+
+
+    var STRINGS = {
+      en: {
+        tagline: 'Create your account',
+        prideLine: 'Proudly serving UAE residents across all 7 emirates',
+        createAccount: 'Create your account',
+        registerSubtitle: 'Save your conversation history across devices',
+        nameLabel: 'Full name',
+        emailLabel: 'Email address',
+        passwordLabel: 'Password',
+        passwordHint: 'At least 6 characters',
+        confirmPasswordLabel: 'Confirm password',
+        emirateLabel: 'Emirate',
+        optionalTag: '(optional)',
+        emirateNone: 'Prefer not to say',
+        createAccountBtn: 'Create Account',
+        hasAccount: 'Already have an account?',
+        signInLink: 'Sign in',
+        continueGuest: 'Continue without an account →',
+        langBtn: 'عربي',
+      },
+      ar: {
+        tagline: 'أنشئ حسابك',
+        prideLine: 'نفخر بخدمة سكان الإمارات في جميع الإمارات السبع',
+        createAccount: 'أنشئ حسابك',
+        registerSubtitle: 'احفظ سجل محادثاتك عبر جميع أجهزتك',
+        nameLabel: 'الاسم الكامل',
+        emailLabel: 'البريد الإلكتروني',
+        passwordLabel: 'كلمة المرور',
+        passwordHint: '6 أحرف على الأقل',
+        confirmPasswordLabel: 'تأكيد كلمة المرور',
+        emirateLabel: 'الإمارة',
+        optionalTag: '(اختياري)',
+        emirateNone: 'أفضل عدم الإفصاح',
+        createAccountBtn: 'إنشاء حساب',
+        hasAccount: 'لديك حساب بالفعل؟',
+        signInLink: 'تسجيل الدخول',
+        continueGuest: 'المتابعة بدون حساب ←',
+        langBtn: 'English',
+      },
+    };
+
+
+
+
+    var currentLang = 'en';
+
+
+
+
+    function applyLang() {
+      var s = STRINGS[currentLang];
+      document.documentElement.lang = currentLang;
+      document.documentElement.dir = currentLang === 'ar' ? 'rtl' : 'ltr';
+      document.getElementById('lang-toggle-btn').textContent = s.langBtn;
+      document.querySelectorAll('[data-i18n]').forEach(function (el) {
+        var key = el.getAttribute('data-i18n');
+        if (s[key]) el.textContent = s[key];
+      });
+    }
+
+
+
+
+    function toggleLang() {
+      currentLang = currentLang === 'en' ? 'ar' : 'en';
+      applyLang();
+    }
+
+
+
+
+    applyLang();
+
+
+
+
+    var form = document.getElementById('register-form');
+    var submitBtn = document.getElementById('submit-btn');
+    var errorMsg = document.getElementById('error-msg');
+
+
+
+
+    function showError(msg) {
+      errorMsg.textContent = msg;
+      errorMsg.classList.add('show');
+    }
+    function hideError() {
+      errorMsg.classList.remove('show');
+    }
+
+
+
+
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      hideError();
+
+
+
+
+      var name = document.getElementById('name').value.trim();
+      var email = document.getElementById('email').value.trim();
+      var password = document.getElementById('password').value;
+      var confirmPassword = document.getElementById('confirm-password').value;
+      var emirate = document.getElementById('emirate').value;
+
+
+
+
+      if (password !== confirmPassword) {
+        var msg = currentLang === 'ar' ? 'كلمتا المرور غير متطابقتين.' : 'Passwords do not match.';
+        showError(msg);
+        return;
+      }
+
+
+
+
+      submitBtn.disabled = true;
+
+
+
+
+      fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: name, email: email, password: password, emirate: emirate }),
+      })
+        .then(function (res) { return res.json().then(function (body) { return { status: res.status, body: body }; }); })
+        .then(function (result) {
+          submitBtn.disabled = false;
+          if (result.body.success) {
+            storeAuth(result.body.token, result.body.user);
+            window.location.href = '/';
+          } else {
+            showError(result.body.error || 'Registration failed. Please try again.');
+          }
+        })
+        .catch(function () {
+          submitBtn.disabled = false;
+          showError('Could not reach the server. Please try again.');
+        });
+    });
+  </script>
+</body>
+</html>
+
+
